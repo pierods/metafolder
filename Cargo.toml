@@ -8,4 +8,6 @@ edition = "2021"
 [dependencies]
 gtk = { version = "0.8.0", package = "gtk4", features = ["v4_10"] }
 home = "0.5.9"
+html-escape = "0.2.13"
 ignore = "0.4.22"
+urlencoding = "2.1.3"
