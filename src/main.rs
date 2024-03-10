@@ -2,8 +2,11 @@ use std::collections::HashMap;
 use std::path::{Path};
 use std::fs;
 use gtk::prelude::*;
-use gtk::{glib, Application, ApplicationWindow, Grid, pango, Align};
-use html_escape;
+use gtk::{glib, Application, ApplicationWindow, Grid, pango, Align, gdk};
+use gtk::gdk::{ContentProvider, DragAction};
+use gtk::gdk::ffi::gdk_content_provider_new_typed;
+use gtk::glib::gobject_ffi::G_TYPE_CHAR;
+use gtk::glib::Value;
 
 const APP_ID: &str = "org.github.pierods.metafolder";
 
@@ -14,21 +17,18 @@ fn main() -> glib::ExitCode {
 }
 
 fn build_ui(app: &Application) {
-
-    // Create a window and set the title
     let window = ApplicationWindow::builder()
         .application(app)
         .title("metafolder")
         //.child(&scrolled_window)
         .build();
-
-    window.connect_maximized_notify(|win: &ApplicationWindow|{ println!("*****************************{}", win.width())});
-
-    // Present window
-    window.present();
+    window.set_default_size(1024, 768);
+    //window.(0.0);
+    window.connect_maximized_notify(|win: &ApplicationWindow| { println!("*****************************{}", win.width()) });
     window.maximize();
+    window.present();
 
-    let entries : HashMap<String, String>;
+    let entries: HashMap<String, String>;
 
     let home = home_path();
     if try_desktop(home.as_str()) {
@@ -40,15 +40,23 @@ fn build_ui(app: &Application) {
     draw_icons_as_grid(entries, &grid, 1500);
 
     let scrolled_window = gtk::ScrolledWindow::new();
-    scrolled_window.set_child( Option::Some(&grid));
+    scrolled_window.set_child(Option::Some(&grid));
 
 
     window.set_child(Option::Some(&scrolled_window));
 
+    let drop_target = gtk::DropTarget::new(glib::types::Type::OBJECT, DragAction::MOVE);
+    drop_target.set_types(&[glib::types::Type::STRING]);
+    drop_target.connect_drop(|window, value, x, y | {
+        let drop = value.get::<&str>();
+        match drop {
+            Ok(lab) => {println!("{}", lab); true}
+            Err(err) => {println!("err={}", err);false}
+        }} );
+    grid.add_controller(drop_target);
 }
 
 fn draw_icons_as_grid(entries: HashMap<String, String>, grid: &Grid, width: i32) {
-
     let mut r: i32 = 0;
     let mut c: i32 = 0;
 
@@ -64,13 +72,20 @@ fn draw_icons_as_grid(entries: HashMap<String, String>, grid: &Grid, width: i32)
     }
 }
 
-fn make_cell(text: String, size : i32) -> gtk::Box {
+struct DesktopIcon {
+    file_name: String,
+    file_path: String,
+    icon : gtk::Box,
+}
+
+
+fn make_cell(text: String, size: i32) -> gtk::Box {
     //let img = gtk::Image::from_file("asset.png");
     let img = gtk::Image::from_icon_name("folder");
     img.set_pixel_size(size);
 
-    let text = html_escape::encode_text(text.as_str()).to_string();
-    let pango_string = String::from("<span font_size=\"small\">") + text.as_str() + "</span>";
+    let g_text = glib::markup_escape_text(text.as_str());
+    let pango_string = String::from("<span font_size=\"small\">") + g_text.as_str() + "</span>";
     let txt = gtk::Label::new(Option::Some(pango_string.as_str()));
     txt.set_use_markup(true);
     txt.set_ellipsize(pango::EllipsizeMode::End);
@@ -90,10 +105,17 @@ fn make_cell(text: String, size : i32) -> gtk::Box {
     desktop_icon.append(&img);
     desktop_icon.append(&txt);
 
+    let drag_source = gtk::DragSource::new();
+    drag_source.set_actions(gtk::gdk::DragAction::MOVE);
+    drag_source.connect_prepare(|ds, x, y | {
+        Some(ContentProvider::for_value(&Value::from("hello")))
+    });
+    desktop_icon.add_controller(drag_source);
+
     desktop_icon
 }
 
-fn try_desktop(home_path : &str) -> bool {
+fn try_desktop(home_path: &str) -> bool {
     let desktop_path = home_path.to_string() + "/Desktop";
     Path::new(desktop_path.as_str()).exists()
 }
@@ -110,8 +132,8 @@ fn home_path() -> String {
     }
 }
 
-fn get_entries(p: String) -> HashMap<String, String>{
-    let mut entries :  HashMap<String, String> =HashMap::new();
+fn get_entries(p: String) -> HashMap<String, String> {
+    let mut entries: HashMap<String, String> = HashMap::new();
 
     let paths = fs::read_dir(p).expect("Impossible to get your home dir!");
 
@@ -122,7 +144,7 @@ fn get_entries(p: String) -> HashMap<String, String>{
             Some(f) => {
                 let file_name_string_opt = f.to_str();
                 match file_name_string_opt {
-                    Some(f) =>  if !f.starts_with(".") {
+                    Some(f) => if !f.starts_with(".") {
                         entries.insert(f.to_string(), f.to_string());
                     },
                     None => panic!("Impossible to get your home dir!"),
