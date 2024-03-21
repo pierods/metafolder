@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::path::{Path};
 use std::fs;
 use gtk::prelude::*;
-use gtk::{glib, Application, ApplicationWindow, Grid, pango, Align, gdk, DragSource};
+use gtk::{glib, Application, ApplicationWindow, Grid, pango, Align, gdk, DragSource, WidgetPaintable, EventSequenceState, Fixed};
 use gtk::gdk::{ContentProvider, DragAction};
 use gtk::gdk::ffi::gdk_content_provider_new_typed;
 use gtk::glib::gobject_ffi::G_TYPE_CHAR;
@@ -38,11 +38,11 @@ fn build_ui(app: &Application) {
     } else {
         entries = get_entries(home);
     }
-    let grid = gtk::Grid::new();
-    draw_icons_as_grid(entries, &grid, 1500);
+    let desktop = gtk::Fixed::new();
+    draw_icons_on_desktop(entries, &desktop, 1500);
 
     let scrolled_window = gtk::ScrolledWindow::new();
-    scrolled_window.set_child(Option::Some(&grid));
+    scrolled_window.set_child(Option::Some(&desktop));
 
 
     window.set_child(Option::Some(&scrolled_window));
@@ -61,17 +61,18 @@ fn build_ui(app: &Application) {
     window.add_controller(drop_target);
 }
 
-fn draw_icons_as_grid(entries: HashMap<String, String>, grid: &Grid, width: i32) {
+fn draw_icons_on_desktop(entries: HashMap<String, String>, desktop: &Fixed, width: i32) {
     let mut r: i32 = 0;
     let mut c: i32 = 0;
 
     for (k, _v) in entries {
         let size = 60;
-        grid.attach(&make_cell(k, size), c, r, size, size);
+        let cell = make_cell(k, size);
+        desktop.put(&cell, c as f64, r as f64);
         c += size;
         if c > width {
             c = 0;
-            r += size;
+            r += 2* size;
         }
         //break;
     }
@@ -112,14 +113,14 @@ fn make_cell(text: String, size: i32) -> gtk::Box {
 
     let drag_source = gtk::DragSource::new();
     drag_source.set_actions(gtk::gdk::DragAction::MOVE);
-    // drag_source.connect_prepare(|ds:&DragSource, x, y | {
-    //     Some(ContentProvider::for_value(&Value::from(&desktop_icon)))
-    // });
     drag_source.connect_prepare(
-        clone!(@weak desktop_icon => @default-return None, move |me, _, _| {
-            Some(ContentProvider::for_value(&Value::from(&desktop_icon)))
+        clone!(@weak  desktop_icon => @default-return None, move |me, _, _| {
+            me.set_state(EventSequenceState::Claimed);
+            Some(ContentProvider::for_value(&Value::from("romboidale")))
         })
     );
+    let w_p = WidgetPaintable::new(Some(&desktop_icon));
+    drag_source.set_icon(Some(&w_p), 0,0);
     desktop_icon.add_controller(drag_source);
 
     desktop_icon
