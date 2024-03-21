@@ -1,13 +1,15 @@
 use crate::glib::clone;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path};
 use std::fs;
+use gio_sys::G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS;
 use gtk::prelude::*;
-use gtk::{glib, Application, ApplicationWindow, Grid, pango, Align, gdk, DragSource, WidgetPaintable, EventSequenceState, Fixed};
+use gtk::{glib, Application, ApplicationWindow, Grid, pango, Align, gdk, DragSource, WidgetPaintable, EventSequenceState, Fixed, gio};
 use gtk::gdk::{ContentProvider, DragAction};
 use gtk::gdk::ffi::gdk_content_provider_new_typed;
+use gtk::gio::{Cancellable, FileQueryInfoFlags, Icon};
 use gtk::glib::gobject_ffi::G_TYPE_CHAR;
-use gtk::glib::Value;
+use gtk::glib::{GStr, Value};
 
 
 const APP_ID: &str = "org.github.pierods.metafolder";
@@ -27,7 +29,7 @@ fn build_ui(app: &Application) {
     window.maximize();
     window.present();
 
-    let entries: HashMap<String, String>;
+    let entries: HashSet<DirItem>;
 
     let home = home_path();
     if try_desktop(home.as_str()) {
@@ -64,22 +66,22 @@ fn build_ui(app: &Application) {
     window.add_controller(drop_target);
 }
 
-fn draw_icons_on_desktop(entries: HashMap<String, String>, desktop: &Fixed, width: i32) -> HashMap<String, gtk::Box> {
-    let mut cell_map:HashMap<String, gtk::Box> = HashMap::new();
+fn draw_icons_on_desktop(entries: HashSet<DirItem>, desktop: &Fixed, width: i32) -> HashMap<String, gtk::Box> {
+    let mut cell_map: HashMap<String, gtk::Box> = HashMap::new();
 
 
     let mut r: i32 = 0;
     let mut c: i32 = 0;
 
-    for (k, _v) in entries {
+    for entry in entries {
         let size = 60;
-        let cell = make_cell(k.clone(), size);
+        let cell = make_cell(entry.path_name.clone(), entry.is_dir, size);
         desktop.put(&cell, c as f64, r as f64);
-        cell_map.insert(k, cell);
+        cell_map.insert(entry.path_name, cell);
         c += size;
         if c > width {
             c = 0;
-            r += 2* size;
+            r += 2 * size;
         }
         //break;
     }
@@ -87,15 +89,22 @@ fn draw_icons_on_desktop(entries: HashMap<String, String>, desktop: &Fixed, widt
 }
 
 struct DesktopIcon {
-    file_name: String,
-    file_path: String,
-    icon : gtk::Box,
+    file_namepath: String,
+    icon: gtk::Box,
+    position_x: f64,
+    position_y: f64,
 }
 
 
-fn make_cell(text: String, size: i32) -> gtk::Box {
+fn make_cell(text: String, is_dir: bool, size: i32) -> gtk::Box {
     //let img = gtk::Image::from_file("asset.png");
-    let img = gtk::Image::from_icon_name("folder");
+    let img: gtk::Image;
+    if is_dir {
+        img = gtk::Image::from_icon_name("folder");
+    } else {
+        img = gtk::Image::from_icon_name("x-office-document");
+    }
+
     img.set_pixel_size(size);
 
     let g_text = glib::markup_escape_text(text.as_str());
@@ -128,7 +137,7 @@ fn make_cell(text: String, size: i32) -> gtk::Box {
         })
     );
     let w_p = WidgetPaintable::new(Some(&desktop_icon));
-    drag_source.set_icon(Some(&w_p), 0,0);
+    drag_source.set_icon(Some(&w_p), 0, 0);
     desktop_icon.add_controller(drag_source);
 
     desktop_icon
@@ -151,8 +160,16 @@ fn home_path() -> String {
     }
 }
 
-fn get_entries(p: String) -> HashMap<String, String> {
-    let mut entries: HashMap<String, String> = HashMap::new();
+#[derive(Eq, Hash, PartialEq)]
+struct DirItem {
+    path_name: String,
+    is_dir: bool,
+    mime_type: Option<String>,
+    icon: Option<gio::Icon>,
+}
+
+fn get_entries(p: String) -> HashSet<DirItem> {
+    let mut entries: HashSet<DirItem> = HashSet::new();
 
     let paths = fs::read_dir(p).expect("Impossible to get your home dir!");
 
@@ -164,7 +181,12 @@ fn get_entries(p: String) -> HashMap<String, String> {
                 let file_name_string_opt = f.to_str();
                 match file_name_string_opt {
                     Some(f) => if !f.starts_with(".") {
-                        entries.insert(f.to_string(), f.to_string());
+                        let (mime_opt, icon_opt) = get_file_info(dir_entry.as_path().to_str().expect("Fatal: get complete path").to_string());
+                        if dir_entry.is_dir() {
+                            entries.insert(DirItem { path_name: f.to_string(), is_dir: true, mime_type: Option::None, icon: Option::None });
+                        } else {
+                            entries.insert(DirItem { path_name: f.to_string(), is_dir: false, mime_type: mime_opt, icon: icon_opt });
+                        }
                     },
                     None => panic!("Impossible to get your home dir!"),
                 }
@@ -175,3 +197,38 @@ fn get_entries(p: String) -> HashMap<String, String> {
     entries
 }
 
+
+fn get_file_info(path_name: String) -> (Option<String>, Option<Icon>) {
+    let g_file = gio::File::for_path(path_name.clone());
+    let g_file_info_result = g_file.query_info("*", gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS,  Cancellable::NONE);
+    let mime_opt: Option<glib::GString>;
+    let g_icon_opt: Option<gio::Icon>;
+    match g_file_info_result {
+        Ok(file_info) => {
+            println!("{}", file_info.size());
+            g_icon_opt = file_info.icon();
+            mime_opt = file_info.content_type();
+        }
+        Err(error) => {
+            println!("{}", error);
+            return (Option::None, Option::None);
+        }
+    }
+    let icon: Option<Icon>;
+    match g_icon_opt {
+        Some(g_icon) => { icon = Option::Some(g_icon) }
+        None => {
+            println!("cannot find icon for {}", path_name);
+            icon = Option::None
+        }
+    }
+    let mime: Option<String>;
+    match mime_opt {
+        Some(gmime) => { mime = Some(gmime.as_str().to_string()) }
+        None => {
+            mime = Option::None;
+            println!("cannot find mime type for  {}", path_name)
+        }
+    }
+    (mime, icon)
+}

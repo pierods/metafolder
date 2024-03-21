@@ -529,6 +529,7 @@ dependencies = [
 name = "metafolder"
 version = "0.1.0"
 dependencies = [
+ "gio-sys",
  "gtk4",
  "home",
  "html-escape",
