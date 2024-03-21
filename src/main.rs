@@ -1,12 +1,14 @@
+use crate::glib::clone;
 use std::collections::HashMap;
 use std::path::{Path};
 use std::fs;
 use gtk::prelude::*;
-use gtk::{glib, Application, ApplicationWindow, Grid, pango, Align, gdk};
+use gtk::{glib, Application, ApplicationWindow, Grid, pango, Align, gdk, DragSource};
 use gtk::gdk::{ContentProvider, DragAction};
 use gtk::gdk::ffi::gdk_content_provider_new_typed;
 use gtk::glib::gobject_ffi::G_TYPE_CHAR;
 use gtk::glib::Value;
+
 
 const APP_ID: &str = "org.github.pierods.metafolder";
 
@@ -48,12 +50,15 @@ fn build_ui(app: &Application) {
     let drop_target = gtk::DropTarget::new(glib::types::Type::OBJECT, DragAction::MOVE);
     drop_target.set_types(&[glib::types::Type::STRING]);
     drop_target.connect_drop(|window, value, x, y | {
-        let drop = value.get::<&str>();
+        let drop = value.get::<&gtk::Box>();
         match drop {
-            Ok(lab) => {println!("{}", lab); true}
+            Ok(lab) => {
+                println!("{}, {}", x, y);
+                true
+            }
             Err(err) => {println!("err={}", err);false}
         }} );
-    grid.add_controller(drop_target);
+    window.add_controller(drop_target);
 }
 
 fn draw_icons_as_grid(entries: HashMap<String, String>, grid: &Grid, width: i32) {
@@ -107,9 +112,14 @@ fn make_cell(text: String, size: i32) -> gtk::Box {
 
     let drag_source = gtk::DragSource::new();
     drag_source.set_actions(gtk::gdk::DragAction::MOVE);
-    drag_source.connect_prepare(|ds, x, y | {
-        Some(ContentProvider::for_value(&Value::from("hello")))
-    });
+    // drag_source.connect_prepare(|ds:&DragSource, x, y | {
+    //     Some(ContentProvider::for_value(&Value::from(&desktop_icon)))
+    // });
+    drag_source.connect_prepare(
+        clone!(@weak desktop_icon => @default-return None, move |me, _, _| {
+            Some(ContentProvider::for_value(&Value::from(&desktop_icon)))
+        })
+    );
     desktop_icon.add_controller(drag_source);
 
     desktop_icon
