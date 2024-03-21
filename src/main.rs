@@ -11,6 +11,7 @@ use gtk::glib::Value;
 
 
 const APP_ID: &str = "org.github.pierods.metafolder";
+const DRAG_ACTION: DragAction = DragAction::MOVE;
 
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -19,11 +20,7 @@ fn main() -> glib::ExitCode {
 }
 
 fn build_ui(app: &Application) {
-    let window = ApplicationWindow::builder()
-        .application(app)
-        .title("metafolder")
-        //.child(&scrolled_window)
-        .build();
+    let window = ApplicationWindow::builder().application(app).title("metafolder").build();
     window.set_default_size(1024, 768);
     //window.(0.0);
     window.connect_maximized_notify(|win: &ApplicationWindow| { println!("*****************************{}", win.width()) });
@@ -39,7 +36,7 @@ fn build_ui(app: &Application) {
         entries = get_entries(home);
     }
     let desktop = gtk::Fixed::new();
-    draw_icons_on_desktop(entries, &desktop, 1500);
+    let cell_map = draw_icons_on_desktop(entries, &desktop, 1500);
 
     let scrolled_window = gtk::ScrolledWindow::new();
     scrolled_window.set_child(Option::Some(&desktop));
@@ -47,28 +44,38 @@ fn build_ui(app: &Application) {
 
     window.set_child(Option::Some(&scrolled_window));
 
-    let drop_target = gtk::DropTarget::new(glib::types::Type::OBJECT, DragAction::MOVE);
+    let drop_target = gtk::DropTarget::new(glib::types::Type::OBJECT, DRAG_ACTION);
     drop_target.set_types(&[glib::types::Type::STRING]);
-    drop_target.connect_drop(|window, value, x, y | {
-        let drop = value.get::<&gtk::Box>();
+    drop_target.connect_drop(move |window, value, x, y| {
+        let drop = value.get::<&str>();
         match drop {
             Ok(lab) => {
-                println!("{}, {}", x, y);
+                println!("{:?}, {}, {}", lab, x, y);
+                let cell = cell_map.get(lab).expect("Fatal: cannot find cell");
+                desktop.move_(cell, x, y);
                 true
             }
-            Err(err) => {println!("err={}", err);false}
-        }} );
+            Err(err) => {
+                println!("err={}", err);
+                false
+            }
+        }
+    });
     window.add_controller(drop_target);
 }
 
-fn draw_icons_on_desktop(entries: HashMap<String, String>, desktop: &Fixed, width: i32) {
+fn draw_icons_on_desktop(entries: HashMap<String, String>, desktop: &Fixed, width: i32) -> HashMap<String, gtk::Box> {
+    let mut cell_map:HashMap<String, gtk::Box> = HashMap::new();
+
+
     let mut r: i32 = 0;
     let mut c: i32 = 0;
 
     for (k, _v) in entries {
         let size = 60;
-        let cell = make_cell(k, size);
+        let cell = make_cell(k.clone(), size);
         desktop.put(&cell, c as f64, r as f64);
+        cell_map.insert(k, cell);
         c += size;
         if c > width {
             c = 0;
@@ -76,6 +83,7 @@ fn draw_icons_on_desktop(entries: HashMap<String, String>, desktop: &Fixed, widt
         }
         //break;
     }
+    cell_map
 }
 
 struct DesktopIcon {
@@ -92,15 +100,15 @@ fn make_cell(text: String, size: i32) -> gtk::Box {
 
     let g_text = glib::markup_escape_text(text.as_str());
     let pango_string = String::from("<span font_size=\"small\">") + g_text.as_str() + "</span>";
-    let txt = gtk::Label::new(Option::Some(pango_string.as_str()));
-    txt.set_use_markup(true);
-    txt.set_ellipsize(pango::EllipsizeMode::End);
-    txt.set_wrap(true);
-    txt.set_wrap_mode(pango::WrapMode::WordChar);
-    txt.set_lines(2);
-    txt.set_justify(gtk::Justification::Center);
+    let label = gtk::Label::new(Option::Some(pango_string.as_str()));
+    label.set_use_markup(true);
+    label.set_ellipsize(pango::EllipsizeMode::End);
+    label.set_wrap(true);
+    label.set_wrap_mode(pango::WrapMode::WordChar);
+    label.set_lines(2);
+    label.set_justify(gtk::Justification::Center);
 
-    txt.set_halign(Align::Center);
+    label.set_halign(Align::Center);
     // txt.set_valign(Align::End);
     img.set_halign(Align::Center);
     // img.set_valign(Align::Start);
@@ -109,14 +117,14 @@ fn make_cell(text: String, size: i32) -> gtk::Box {
     desktop_icon.set_homogeneous(false);
     desktop_icon.set_spacing(3);
     desktop_icon.append(&img);
-    desktop_icon.append(&txt);
+    desktop_icon.append(&label);
 
     let drag_source = gtk::DragSource::new();
-    drag_source.set_actions(gtk::gdk::DragAction::MOVE);
+    drag_source.set_actions(DRAG_ACTION);
     drag_source.connect_prepare(
         clone!(@weak  desktop_icon => @default-return None, move |me, _, _| {
             me.set_state(EventSequenceState::Claimed);
-            Some(ContentProvider::for_value(&Value::from("romboidale")))
+            Some(ContentProvider::for_value(&Value::from(text.clone())))
         })
     );
     let w_p = WidgetPaintable::new(Some(&desktop_icon));
