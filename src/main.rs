@@ -23,6 +23,13 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 
+#[derive(Default)]
+struct Desktop {
+    path_name : String,
+    background_color : String,
+    cell_map : HashMap<String, gtk::Box>,
+}
+
 fn build_ui(app: &Application) {
     let window = ApplicationWindow::builder().application(app).title("metafolder").build();
     window.set_default_size(1024, 768);
@@ -32,19 +39,18 @@ fn build_ui(app: &Application) {
     window.present();
 
     let entries: HashSet<DirItem>;
-
-    let home = home_path();
-    if try_desktop(home.as_str()) {
-        entries = get_entries(home + "/Desktop");
-    } else {
-        entries = get_entries(home);
+    let mut desktop_props = Desktop::default();
+    desktop_props.path_name = home_path();
+    if try_desktop(desktop_props.path_name.as_str()) {
+        desktop_props.path_name +=  "/Desktop";
     }
+    entries = get_entries(desktop_props.path_name);
+
     let desktop = gtk::Fixed::new();
-    let cell_map = draw_icons_on_desktop(entries, &desktop, 1500, ICON_SIZE);
+    desktop_props.cell_map = draw_icons_on_desktop(entries, &desktop, 1500, ICON_SIZE);
 
     let scrolled_window = gtk::ScrolledWindow::new();
     scrolled_window.set_child(Option::Some(&desktop));
-
 
     window.set_child(Option::Some(&scrolled_window));
 
@@ -55,7 +61,7 @@ fn build_ui(app: &Application) {
         match drop {
             Ok(lab) => {
                 println!("{:?}, {}, {}", lab, x, y);
-                let cell = cell_map.get(lab).expect("Fatal: cannot find cell");
+                let cell = desktop_props.cell_map.get(lab).expect("Fatal: cannot find cell");
                 desktop.move_(cell, x, y);
                 true
             }
@@ -264,4 +270,27 @@ fn generate_icon(dir_item: DirItem, size :i32) -> gtk::Image {
 
     img.set_pixel_size(size);
     img
+}
+
+struct MemoIcon {
+    file_name: String,
+    file_namepath: String,
+    position_x: f64,
+    position_y: f64,
+}
+
+struct MemoDesktop {
+    path_name : String,
+    background_color : String,
+    icons : HashSet<MemoIcon>,
+}
+
+
+fn save_settings() {
+    
+    let memo_desktop = MemoDesktop{
+        path_name: "".to_string(),
+        background_color: "".to_string(),
+        icons: Default::default(),
+    };
 }
