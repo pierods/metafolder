@@ -90,6 +90,7 @@ fn draw_icons_on_desktop(entries: HashSet<DirItem>, desktop: &Fixed, width: i32,
 }
 
 struct DesktopIcon {
+    file_name: String,
     file_namepath: String,
     icon: gtk::Box,
     position_x: f64,
@@ -98,26 +99,11 @@ struct DesktopIcon {
 
 
 fn make_cell(dir_item: DirItem, size: i32) -> gtk::Box {
-    //let img = gtk::Image::from_file("asset.png");
-    let img: gtk::Image;
-    println!("{}", dir_item.path_name);
-    if dir_item.is_dir {
-        img = gtk::Image::from_icon_name("folder");
-    } else {
-        if let Some(gicon) = dir_item.icon {
-            if dir_item.mime_type.starts_with("image") {
-                img = gtk::Image::from_file(dir_item.path_name.clone());
-            } else {
-                img = gtk::Image::from_gicon(&gicon);
-            }
-        } else {
-            img = gtk::Image::from_icon_name("x-office-document");
-        }
-    }
+    let path_name = dir_item.path_name.clone();
+    let name = dir_item.name.clone();
+    let img = generate_icon(dir_item, size);
 
-    img.set_pixel_size(size);
-
-    let g_text = glib::markup_escape_text(dir_item.name.as_str());
+    let g_text = glib::markup_escape_text(name.as_str());
     let pango_string = String::from("<span font_size=\"small\">") + g_text.as_str() + "</span>";
     let label = gtk::Label::new(Option::Some(pango_string.as_str()));
     label.set_use_markup(true);
@@ -143,7 +129,7 @@ fn make_cell(dir_item: DirItem, size: i32) -> gtk::Box {
     drag_source.connect_prepare(
         clone!(@weak  desktop_icon => @default-return None, move |me, _, _| {
             me.set_state(EventSequenceState::Claimed);
-            Some(ContentProvider::for_value(&Value::from(dir_item.path_name.clone())))
+            Some(ContentProvider::for_value(&Value::from(path_name.clone())))
         })
     );
     let w_p = WidgetPaintable::new(Some(&desktop_icon));
@@ -251,4 +237,31 @@ fn get_file_info(path_name: String) -> Option<DirItem> {
         }
     }
     Some(dir_item)
+}
+
+
+fn generate_icon(dir_item: DirItem, size :i32) -> gtk::Image {
+    let img : gtk::Image;
+    println!("{}", dir_item.mime_type);
+    if dir_item.is_dir {
+        img = gtk::Image::from_icon_name("folder");
+    } else {
+        if let Some(gicon) = dir_item.icon {
+            if dir_item.mime_type.starts_with("image") {
+                img = gtk::Image::from_file(dir_item.path_name.clone());
+            } else {
+                match dir_item.mime_type.as_str() {
+                    "application/pdf" => {
+                        img = gtk::Image::from_gicon(&gicon)
+                    },
+                    _ => img = gtk::Image::from_gicon(&gicon)
+                }
+            }
+        } else {
+            img =  gtk::Image::from_icon_name("x-office-document");
+        }
+    }
+
+    img.set_pixel_size(size);
+    img
 }
