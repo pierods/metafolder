@@ -7,7 +7,7 @@ use gtk::prelude::*;
 use gtk::{glib, Application, ApplicationWindow, Grid, pango, Align, gdk, DragSource, WidgetPaintable, EventSequenceState, Fixed, gio};
 use gtk::gdk::{ContentProvider, DragAction};
 use gtk::gdk::ffi::gdk_content_provider_new_typed;
-use gtk::gio::{Cancellable, FileQueryInfoFlags, Icon};
+use gtk::gio::{Cancellable, FileInfo, FileQueryInfoFlags, Icon};
 use gtk::glib::gobject_ffi::G_TYPE_CHAR;
 use gtk::glib::{GStr, Value};
 
@@ -67,17 +67,18 @@ fn build_ui(app: &Application) {
 }
 
 fn draw_icons_on_desktop(entries: HashSet<DirItem>, desktop: &Fixed, width: i32) -> HashMap<String, gtk::Box> {
-    let mut cell_map: HashMap<String, gtk::Box> = HashMap::new();
 
+    let mut cell_map: HashMap<String, gtk::Box> = HashMap::new();
 
     let mut r: i32 = 0;
     let mut c: i32 = 0;
 
     for entry in entries {
         let size = 60;
-        let cell = make_cell(entry.path_name.clone(), entry.is_dir, size);
+        let path_name = entry.path_name.clone();
+        let cell = make_cell(entry, size);
         desktop.put(&cell, c as f64, r as f64);
-        cell_map.insert(entry.path_name, cell);
+        cell_map.insert(path_name, cell);
         c += size;
         if c > width {
             c = 0;
@@ -96,18 +97,24 @@ struct DesktopIcon {
 }
 
 
-fn make_cell(text: String, is_dir: bool, size: i32) -> gtk::Box {
+fn make_cell(dir_item : DirItem, size: i32) -> gtk::Box {
     //let img = gtk::Image::from_file("asset.png");
     let img: gtk::Image;
-    if is_dir {
+    if dir_item.is_dir {
         img = gtk::Image::from_icon_name("folder");
     } else {
-        img = gtk::Image::from_icon_name("x-office-document");
+        if let Some(gicon) = dir_item.icon {
+            img = gtk::Image::from_gicon(&gicon);
+        }
+        else {
+            img = gtk::Image::from_icon_name("x-office-document");
+        }
+
     }
 
     img.set_pixel_size(size);
 
-    let g_text = glib::markup_escape_text(text.as_str());
+    let g_text = glib::markup_escape_text(dir_item.path_name.as_str());
     let pango_string = String::from("<span font_size=\"small\">") + g_text.as_str() + "</span>";
     let label = gtk::Label::new(Option::Some(pango_string.as_str()));
     label.set_use_markup(true);
@@ -133,7 +140,7 @@ fn make_cell(text: String, is_dir: bool, size: i32) -> gtk::Box {
     drag_source.connect_prepare(
         clone!(@weak  desktop_icon => @default-return None, move |me, _, _| {
             me.set_state(EventSequenceState::Claimed);
-            Some(ContentProvider::for_value(&Value::from(text.clone())))
+            Some(ContentProvider::for_value(&Value::from(dir_item.path_name.clone())))
         })
     );
     let w_p = WidgetPaintable::new(Some(&desktop_icon));
@@ -160,14 +167,6 @@ fn home_path() -> String {
     }
 }
 
-#[derive(Eq, Hash, PartialEq)]
-struct DirItem {
-    path_name: String,
-    is_dir: bool,
-    mime_type: Option<String>,
-    icon: Option<gio::Icon>,
-}
-
 fn get_entries(p: String) -> HashSet<DirItem> {
     let mut entries: HashSet<DirItem> = HashSet::new();
 
@@ -180,14 +179,19 @@ fn get_entries(p: String) -> HashSet<DirItem> {
             Some(f) => {
                 let file_name_string_opt = f.to_str();
                 match file_name_string_opt {
-                    Some(f) => if !f.starts_with(".") {
-                        let (mime_opt, icon_opt) = get_file_info(dir_entry.as_path().to_str().expect("Fatal: get complete path").to_string());
-                        if dir_entry.is_dir() {
-                            entries.insert(DirItem { path_name: f.to_string(), is_dir: true, mime_type: Option::None, icon: Option::None });
-                        } else {
-                            entries.insert(DirItem { path_name: f.to_string(), is_dir: false, mime_type: mime_opt, icon: icon_opt });
+                    Some(f) => {
+                        let (hidden, mime_opt, icon_opt) = get_file_info(dir_entry.as_path().to_str().expect("Fatal: get complete path").to_string());
+                        if hidden {
+                            continue;
                         }
-                    },
+                        let mut mime_str :String = String::from("");
+                        if dir_entry.is_dir() {
+                            if let Some(mime) = mime_opt { mime_str = mime }
+                            entries.insert(DirItem { path_name: f.to_string(), is_dir: true, mime_type: mime_str, icon: icon_opt  });
+                        } else {
+                            entries.insert(DirItem { path_name: f.to_string(), is_dir: false, mime_type: mime_str, icon: icon_opt });
+                        }
+                    }
                     None => panic!("Impossible to get your home dir!"),
                 }
             }
@@ -197,25 +201,35 @@ fn get_entries(p: String) -> HashSet<DirItem> {
     entries
 }
 
+#[derive(Eq, Hash, PartialEq)]
+struct DirItem {
+    path_name: String,
+    is_dir: bool,
+    mime_type: String,
+    icon: Option<gio::Icon>,
+}
 
-fn get_file_info(path_name: String) -> (Option<String>, Option<Icon>) {
+
+fn get_file_info(path_name: String) -> (bool, Option<String>, Option<Icon>) {
     let g_file = gio::File::for_path(path_name.clone());
-    let g_file_info_result = g_file.query_info("*", gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS,  Cancellable::NONE);
-    let mime_opt: Option<glib::GString>;
-    let g_icon_opt: Option<gio::Icon>;
+
+    let g_file_info_result = g_file.query_info("*", gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS, Cancellable::NONE);
+    let g_file_info: FileInfo;
     match g_file_info_result {
         Ok(file_info) => {
-            println!("{}", file_info.size());
-            g_icon_opt = file_info.icon();
-            mime_opt = file_info.content_type();
+            g_file_info = file_info;
         }
         Err(error) => {
             println!("{}", error);
-            return (Option::None, Option::None);
+            return (false, Option::None, Option::None);
         }
     }
+
+    if g_file_info.is_hidden() {
+        return (true, None, None);
+    };
     let icon: Option<Icon>;
-    match g_icon_opt {
+    match g_file_info.icon() {
         Some(g_icon) => { icon = Option::Some(g_icon) }
         None => {
             println!("cannot find icon for {}", path_name);
@@ -223,12 +237,12 @@ fn get_file_info(path_name: String) -> (Option<String>, Option<Icon>) {
         }
     }
     let mime: Option<String>;
-    match mime_opt {
+    match g_file_info.content_type() {
         Some(gmime) => { mime = Some(gmime.as_str().to_string()) }
         None => {
             mime = Option::None;
             println!("cannot find mime type for  {}", path_name)
         }
     }
-    (mime, icon)
+    (false, mime, icon)
 }
