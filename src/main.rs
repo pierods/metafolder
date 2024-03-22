@@ -1,20 +1,18 @@
-use std::cell::{Ref, RefCell, RefMut};
-use crate::glib::clone;
+use std::cell::{Ref, RefCell};
 use std::collections::{HashMap, HashSet};
-use std::path::{Path};
 use std::fs;
-use gio_sys::G_FILE_QUERY_INFO_NOFOLLOW_SYMLINKS;
-use gtk::prelude::*;
-use gtk::{glib, Application, ApplicationWindow, Grid, pango, Align, gdk, DragSource, WidgetPaintable, EventSequenceState, Fixed, gio};
-use gtk::gdk::{ContentProvider, DragAction};
-use gtk::gdk::ffi::gdk_content_provider_new_typed;
-use gtk::gio::{Cancellable, FileInfo, FileQueryInfoFlags, FileType, Icon};
-use gtk::glib::gobject_ffi::G_TYPE_CHAR;
-use gtk::glib::{GStr, Value};
-use home::env::home_dir_with_env;
-use std::rc::{Rc};
-use serde::{Serialize, Deserialize};
+use std::io::{Read, Write};
+use std::path::Path;
+use std::rc::Rc;
 
+use gtk::{Align, Application, ApplicationWindow, EventSequenceState, Fixed, gio, glib, MessageDialog, pango, ResponseType, WidgetPaintable};
+use gtk::gdk::{ContentProvider, DragAction};
+use gtk::gio::{Cancellable, FileInfo, FileType};
+use gtk::glib::Value;
+use gtk::prelude::*;
+use serde::{Deserialize, Serialize};
+
+use crate::glib::clone;
 
 const APP_ID: &str = "org.github.pierods.metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
@@ -46,13 +44,13 @@ fn build_ui(app: &Application) {
     let mut desktop_props = c.borrow_mut();
 
     desktop_props.path_name = home_path();
-    if try_desktop(desktop_props.path_name.as_str()) {
+    if try_file((desktop_props.path_name.clone() + "/Desktop").as_str()) {
         desktop_props.path_name += "/Desktop";
     }
     entries = get_entries(desktop_props.path_name.clone());
 
     let desktop = gtk::Fixed::new();
-    desktop_props.cell_map = draw_icons_on_desktop(entries, &desktop, 1500, ICON_SIZE);
+    desktop_props.cell_map = draw_icons_on_desktop(entries, &desktop, 1500, ICON_SIZE, load_settings(desktop_props.path_name.clone()));
 
     let scrolled_window = gtk::ScrolledWindow::new();
     scrolled_window.set_child(Option::Some(&desktop));
@@ -82,16 +80,21 @@ fn build_ui(app: &Application) {
     window.add_controller(drop_target);
 }
 
-fn draw_icons_on_desktop(entries: HashSet<DirItem>, desktop: &Fixed, width: i32, size: i32) -> HashMap<String, gtk::Box> {
+fn draw_icons_on_desktop(entries: HashSet<DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: MemoDesktop) -> HashMap<String, gtk::Box> {
     let mut cell_map: HashMap<String, gtk::Box> = HashMap::new();
 
     let mut r: i32 = 0;
     let mut c: i32 = 0;
-
+    let memo_icons = memo_desktop.icons;
     for entry in entries {
         let path_name = entry.path_name.clone();
         let cell = make_cell(entry, size);
-        desktop.put(&cell, c as f64, r as f64);
+        if !memo_icons.contains_key(path_name.as_str()) {
+            desktop.put(&cell, c as f64, r as f64);
+        } else {
+            desktop.put(&cell, memo_icons.get(path_name.as_str()).unwrap().position_x as f64, memo_icons.get(path_name.as_str()).unwrap().position_y as f64);
+        }
+
         cell_map.insert(path_name, cell);
         c += size;
         if c > width {
@@ -102,15 +105,6 @@ fn draw_icons_on_desktop(entries: HashSet<DirItem>, desktop: &Fixed, width: i32,
     }
     cell_map
 }
-
-struct DesktopIcon {
-    file_name: String,
-    file_namepath: String,
-    icon: gtk::Box,
-    position_x: f64,
-    position_y: f64,
-}
-
 
 fn make_cell(dir_item: DirItem, size: i32) -> gtk::Box {
     let path_name = dir_item.path_name.clone();
@@ -153,9 +147,8 @@ fn make_cell(dir_item: DirItem, size: i32) -> gtk::Box {
     desktop_icon
 }
 
-fn try_desktop(home_path: &str) -> bool {
-    let desktop_path = home_path.to_string() + "/Desktop";
-    Path::new(desktop_path.as_str()).exists()
+fn try_file(path: &str) -> bool {
+    Path::new(path).exists()
 }
 
 fn home_path() -> String {
@@ -182,10 +175,10 @@ fn get_entries(p: String) -> HashSet<DirItem> {
             Some(f) => {
                 let file_name_string_opt = f.to_str();
                 match file_name_string_opt {
-                    Some(f) => {
+                    Some(_) => {
                         let dir_item_opt = get_file_info(dir_entry.as_path().to_str().expect("Fatal: get complete path").to_string());
                         match dir_item_opt {
-                            Some(mut dir_item) => {
+                            Some(dir_item) => {
                                 entries.insert(dir_item);
                             }
                             None => continue
@@ -282,7 +275,6 @@ fn generate_icon(dir_item: DirItem, size: i32) -> gtk::Image {
 
 #[derive(Eq, Hash, PartialEq, Default, Serialize, Deserialize, Debug)]
 struct MemoIcon {
-    file_name: String,
     position_x: i32,
     position_y: i32,
 }
@@ -291,27 +283,54 @@ struct MemoIcon {
 struct MemoDesktop {
     path_name: String,
     background_color: String,
-    icons: HashSet<MemoIcon>,
+    cell_size: i32,
+    icons: HashMap<String, MemoIcon>,
 }
 
 
 fn save_settings(desktop_props: Ref<Desktop>) {
     let mut memo_desktop = MemoDesktop::default();
-    let mut icons :HashSet<MemoIcon> = HashSet::new();
+    let mut icons: HashMap<String, MemoIcon> = HashMap::new();
 
     memo_desktop.path_name = desktop_props.path_name.clone();
     memo_desktop.background_color = desktop_props.background_color.clone();
     for (path, gbox) in desktop_props.cell_map.clone() {
         let allocation = gbox.allocation();
-        let memo_icon =  MemoIcon{
-            file_name: path,
+        let memo_icon = MemoIcon {
             position_x: allocation.x(),
             position_y: allocation.y(),
         };
-        icons.insert(memo_icon);
+        icons.insert(path, memo_icon);
     }
-    memo_desktop.icons =icons;
+    memo_desktop.icons = icons;
 
-    let serialized = serde_json::to_string(&memo_desktop).unwrap();
-    println!("{}", serialized)
+    let serialized = serde_json::to_string_pretty(&memo_desktop).unwrap();
+    let mut settings_path = desktop_props.path_name.clone();
+    settings_path.push_str("/.metafolder");
+    let mut f = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open(settings_path).unwrap();
+
+    f.write_all(serialized.as_bytes()).unwrap();
+    f.flush().unwrap();
+}
+
+fn load_settings(mut path: String) -> MemoDesktop {
+    path.push_str("/.metafolder");
+    if ! try_file(path.as_str()) {
+        return MemoDesktop::default();
+    }
+    let mut f : fs::File;
+    let f_result = std::fs::OpenOptions::new().read(true).open(path);
+    match f_result {
+        Ok(file) => {f = file}
+        Err(e) => {
+            println!("{}", e);
+            return MemoDesktop::default()
+        }
+    }
+    let mut serialized = String::new();
+    f.read_to_string(&mut serialized).unwrap();
+
+    let memo_desktop: MemoDesktop = serde_json::from_str(serialized.as_str()).unwrap();
+
+    memo_desktop
 }
