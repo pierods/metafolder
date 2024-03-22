@@ -1,3 +1,4 @@
+use std::cell::{Ref, RefCell, RefMut};
 use crate::glib::clone;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path};
@@ -11,6 +12,8 @@ use gtk::gio::{Cancellable, FileInfo, FileQueryInfoFlags, FileType, Icon};
 use gtk::glib::gobject_ffi::G_TYPE_CHAR;
 use gtk::glib::{GStr, Value};
 use home::env::home_dir_with_env;
+use std::rc::{Rc};
+use serde::{Serialize, Deserialize};
 
 
 const APP_ID: &str = "org.github.pierods.metafolder";
@@ -25,26 +28,28 @@ fn main() -> glib::ExitCode {
 
 #[derive(Default)]
 struct Desktop {
-    path_name : String,
-    background_color : String,
-    cell_map : HashMap<String, gtk::Box>,
+    path_name: String,
+    background_color: String,
+    cell_map: HashMap<String, gtk::Box>,
 }
 
 fn build_ui(app: &Application) {
     let window = ApplicationWindow::builder().application(app).title("metafolder").build();
     window.set_default_size(1024, 768);
-    //window.(0.0);
     window.connect_maximized_notify(|win: &ApplicationWindow| { println!("*****************************{}", win.width()) });
     window.maximize();
     window.present();
 
     let entries: HashSet<DirItem>;
-    let mut desktop_props = Desktop::default();
+    let desktop_props_rc: Rc<RefCell<Desktop>> = Rc::new(RefCell::new(Desktop::default()));
+    let c = desktop_props_rc.clone();
+    let mut desktop_props = c.borrow_mut();
+
     desktop_props.path_name = home_path();
     if try_desktop(desktop_props.path_name.as_str()) {
-        desktop_props.path_name +=  "/Desktop";
+        desktop_props.path_name += "/Desktop";
     }
-    entries = get_entries(desktop_props.path_name);
+    entries = get_entries(desktop_props.path_name.clone());
 
     let desktop = gtk::Fixed::new();
     desktop_props.cell_map = draw_icons_on_desktop(entries, &desktop, 1500, ICON_SIZE);
@@ -56,13 +61,16 @@ fn build_ui(app: &Application) {
 
     let drop_target = gtk::DropTarget::new(glib::types::Type::OBJECT, DRAG_ACTION);
     drop_target.set_types(&[glib::types::Type::STRING]);
+
     drop_target.connect_drop(move |window, value, x, y| {
         let drop = value.get::<&str>();
         match drop {
             Ok(lab) => {
-                println!("{:?}, {}, {}", lab, x, y);
+                let c = desktop_props_rc.clone();
+                let desktop_props = c.borrow();
                 let cell = desktop_props.cell_map.get(lab).expect("Fatal: cannot find cell");
                 desktop.move_(cell, x, y);
+                save_settings(desktop_props);
                 true
             }
             Err(err) => {
@@ -246,8 +254,8 @@ fn get_file_info(path_name: String) -> Option<DirItem> {
 }
 
 
-fn generate_icon(dir_item: DirItem, size :i32) -> gtk::Image {
-    let img : gtk::Image;
+fn generate_icon(dir_item: DirItem, size: i32) -> gtk::Image {
+    let img: gtk::Image;
     println!("{}", dir_item.mime_type);
     if dir_item.is_dir {
         img = gtk::Image::from_icon_name("folder");
@@ -259,12 +267,12 @@ fn generate_icon(dir_item: DirItem, size :i32) -> gtk::Image {
                 match dir_item.mime_type.as_str() {
                     "application/pdf" => {
                         img = gtk::Image::from_gicon(&gicon)
-                    },
+                    }
                     _ => img = gtk::Image::from_gicon(&gicon)
                 }
             }
         } else {
-            img =  gtk::Image::from_icon_name("x-office-document");
+            img = gtk::Image::from_icon_name("x-office-document");
         }
     }
 
@@ -272,25 +280,38 @@ fn generate_icon(dir_item: DirItem, size :i32) -> gtk::Image {
     img
 }
 
+#[derive(Eq, Hash, PartialEq, Default, Serialize, Deserialize, Debug)]
 struct MemoIcon {
     file_name: String,
-    file_namepath: String,
-    position_x: f64,
-    position_y: f64,
+    position_x: i32,
+    position_y: i32,
 }
 
+#[derive(Default, Serialize, Deserialize, Debug)]
 struct MemoDesktop {
-    path_name : String,
-    background_color : String,
-    icons : HashSet<MemoIcon>,
+    path_name: String,
+    background_color: String,
+    icons: HashSet<MemoIcon>,
 }
 
 
-fn save_settings() {
-    
-    let memo_desktop = MemoDesktop{
-        path_name: "".to_string(),
-        background_color: "".to_string(),
-        icons: Default::default(),
-    };
+fn save_settings(desktop_props: Ref<Desktop>) {
+    let mut memo_desktop = MemoDesktop::default();
+    let mut icons :HashSet<MemoIcon> = HashSet::new();
+
+    memo_desktop.path_name = desktop_props.path_name.clone();
+    memo_desktop.background_color = desktop_props.background_color.clone();
+    for (path, gbox) in desktop_props.cell_map.clone() {
+        let allocation = gbox.allocation();
+        let memo_icon =  MemoIcon{
+            file_name: path,
+            position_x: allocation.x(),
+            position_y: allocation.y(),
+        };
+        icons.insert(memo_icon);
+    }
+    memo_desktop.icons =icons;
+
+    let serialized = serde_json::to_string(&memo_desktop).unwrap();
+    println!("{}", serialized)
 }
