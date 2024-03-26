@@ -43,6 +43,7 @@ pub fn make_cell(dir_item: files::DirItem, size: i32) -> gtk::Box {
         })
     );
     let w_p = WidgetPaintable::new(Some(&desktop_icon));
+    //TODO hot_x, hot_y
     drag_source.set_icon(Some(&w_p), 0, 0);
     desktop_icon.add_controller(drag_source);
 

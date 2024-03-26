@@ -35,7 +35,6 @@ fn build_ui(app: &Application) {
     window.maximize();
     window.present();
 
-    let entries: HashSet<files::DirItem>;
     let desktop_props_rc: Rc<RefCell<Desktop>> = Rc::new(RefCell::new(Desktop::default()));
     let c = desktop_props_rc.clone();
     let mut desktop_props = c.borrow_mut();
@@ -44,14 +43,13 @@ fn build_ui(app: &Application) {
     if files::try_file((desktop_props.path_name.clone() + "/Desktop").as_str()) {
         desktop_props.path_name += "/Desktop";
     }
-    entries = files::get_entries(desktop_props.path_name.clone());
+    let entries = files::get_entries(desktop_props.path_name.clone());
 
     let desktop = gtk::Fixed::new();
-    desktop_props.cell_map = draw_icons_on_desktop(entries, &desktop, 1500, ICON_SIZE, files::load_settings(desktop_props.path_name.clone()));
+    desktop_props.cell_map = draw_icons(entries, &desktop, 1500, ICON_SIZE, files::load_settings(desktop_props.path_name.clone()));
 
     let scrolled_window = gtk::ScrolledWindow::new();
     scrolled_window.set_child(Option::Some(&desktop));
-
     window.set_child(Option::Some(&scrolled_window));
 
     let drop_target = gtk::DropTarget::new(glib::types::Type::OBJECT, DRAG_ACTION);
@@ -77,7 +75,7 @@ fn build_ui(app: &Application) {
     window.add_controller(drop_target);
 }
 
-fn draw_icons_on_desktop(entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoDesktop) -> HashMap<String, gtk::Box> {
+fn draw_icons(entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoDesktop) -> HashMap<String, gtk::Box> {
     let mut cell_map: HashMap<String, gtk::Box> = HashMap::new();
 
     let mut r: i32 = 0;
