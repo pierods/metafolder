@@ -14,6 +14,7 @@ mod files;
 const APP_ID: &str = "org.github.pierods.metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
 const ICON_SIZE: i32 = 60;
+const INITIAL_DESKTOP_WIDTH :i32= 1024;
 
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -45,25 +46,27 @@ fn build_ui(app: &Application) {
     }
     let entries = files::get_entries(desktop_props.path_name.clone());
 
-    let desktop = gtk::Fixed::new();
-    desktop_props.cell_map = draw_icons(entries, &desktop, 1500, ICON_SIZE, files::load_settings(desktop_props.path_name.clone()));
+    let desktop_rc = Rc::new(RefCell::new(gtk::Fixed::new()));
+    let desktop = desktop_rc.clone();
+    desktop_props.cell_map = draw_icons(entries, desktop.borrow().as_ref(), INITIAL_DESKTOP_WIDTH, ICON_SIZE, files::load_settings(desktop_props.path_name.clone()));
 
     let scrolled_window = gtk::ScrolledWindow::new();
-    scrolled_window.set_child(Option::Some(&desktop));
+    scrolled_window.set_child(Option::<&gtk::Fixed>::Some(desktop.borrow().as_ref()));
     window.set_child(Option::Some(&scrolled_window));
 
     let drop_target = gtk::DropTarget::new(glib::types::Type::OBJECT, DRAG_ACTION);
     drop_target.set_types(&[glib::types::Type::STRING]);
 
+    let d = desktop.clone();
     drop_target.connect_drop(move |window, value, x, y| {
         let drop = value.get::<&str>();
         match drop {
-            Ok(lab) => {
+            Ok(icon_file_path) => {
                 let c = desktop_props_rc.clone();
                 let desktop_props = c.borrow();
-                let cell = desktop_props.cell_map.get(lab).expect("Fatal: cannot find cell");
-                desktop.move_(cell, x, y);
-                files::save_settings(desktop_props);
+                let cell = desktop_props.cell_map.get(icon_file_path).expect("Fatal: cannot find cell");
+                d.borrow().move_(cell, x, y);
+                files::save_settings(desktop_props, icon_file_path, x, y);
                 true
             }
             Err(err) => {
@@ -72,7 +75,7 @@ fn build_ui(app: &Application) {
             }
         }
     });
-    window.add_controller(drop_target);
+    desktop.borrow().add_controller(drop_target);
 }
 
 fn draw_icons(entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoDesktop) -> HashMap<String, gtk::Box> {
@@ -91,7 +94,7 @@ fn draw_icons(entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, siz
         }
 
         cell_map.insert(path_name, cell);
-        c += size;
+        c += size + size/3;
         if c > width {
             c = 0;
             r += 2 * size;

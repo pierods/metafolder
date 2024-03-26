@@ -53,24 +53,22 @@ pub fn make_cell(dir_item: files::DirItem, size: i32) -> gtk::Box {
 fn generate_icon(dir_item: files::DirItem, size: i32) -> gtk::Image {
     let img: gtk::Image;
     //println!("{}", dir_item.mime_type);
-    if dir_item.is_dir {
-        img = gtk::Image::from_icon_name("folder");
-    } else {
-        if let Some(gicon) = dir_item.icon {
-            if dir_item.mime_type.starts_with("image") {
-                img = gtk::Image::from_file(dir_item.path_name.clone());
-            } else {
-                match dir_item.mime_type.as_str() {
-                    "application/pdf" => {
-                        img = gtk::Image::from_gicon(&gicon)
-                    }
-                    _ => img = gtk::Image::from_gicon(&gicon)
-                }
-            }
+
+    if let Some(gicon) = dir_item.icon {
+        if dir_item.mime_type.starts_with("image") {
+            img = gtk::Image::from_file(dir_item.path_name.clone());
         } else {
-            img = gtk::Image::from_icon_name("x-office-document");
+            match dir_item.mime_type.as_str() {
+                "application/pdf" => {
+                    img = gtk::Image::from_gicon(&gicon)
+                }
+                _ => img = gtk::Image::from_gicon(&gicon)
+            }
         }
+    } else {
+        img = gtk::Image::from_icon_name("x-office-document");
     }
+
 
     img.set_pixel_size(size);
     img

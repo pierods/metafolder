@@ -127,18 +127,26 @@ pub struct MemoDesktop {
 }
 
 
-pub(crate) fn save_settings(desktop_props: Ref<Desktop>) {
+pub(crate) fn save_settings(desktop_props: Ref<Desktop>, icon_file_path: &str, x: f64, y: f64) {
     let mut memo_desktop = MemoDesktop::default();
     let mut icons: HashMap<String, MemoIcon> = HashMap::new();
 
     memo_desktop.path_name = desktop_props.path_name.clone();
     memo_desktop.background_color = desktop_props.background_color.clone();
     for (path, gbox) in desktop_props.cell_map.clone() {
-        let allocation = gbox.allocation();
-        let memo_icon = MemoIcon {
-            position_x: allocation.x(),
-            position_y: allocation.y(),
-        };
+        let memo_icon: crate::files::MemoIcon;
+        if path == icon_file_path {
+            memo_icon = MemoIcon {
+                position_x: x as i32,
+                position_y: y as i32,
+            };
+        } else {
+            let allocation = gbox.allocation();
+            memo_icon = MemoIcon {
+                position_x: allocation.x(),
+                position_y: allocation.y(),
+            };
+        }
         icons.insert(path, memo_icon);
     }
     memo_desktop.icons = icons;
