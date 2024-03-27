@@ -4,6 +4,7 @@ use std::io::{Read, Write};
 use std::rc::Rc;
 
 use gtk::{Application, ApplicationWindow, Fixed, glib};
+use gtk::gdk;
 use gtk::gdk::DragAction;
 use gtk::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -14,7 +15,7 @@ mod files;
 const APP_ID: &str = "org.github.pierods.metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
 const ICON_SIZE: i32 = 60;
-const INITIAL_DESKTOP_WIDTH :i32= 1024;
+const INITIAL_DESKTOP_WIDTH: i32 = 1024;
 
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
@@ -34,6 +35,16 @@ fn build_ui(app: &Application) {
     window.set_default_size(1024, 768);
     window.connect_maximized_notify(|win: &ApplicationWindow| { println!("*****************************{}", win.width()) });
     window.maximize();
+
+    let provider = gtk::CssProvider::new();
+    let bytes = glib::Bytes::from("window {background-color:rgba(80,80,80,80);}".as_bytes());
+    provider.load_from_bytes(&bytes);
+    gtk::style_context_add_provider_for_display(
+        &gdk::Display::default().expect("Could not connect to a display."),
+        &provider,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+
     window.present();
 
     let desktop_props_rc: Rc<RefCell<Desktop>> = Rc::new(RefCell::new(Desktop::default()));
@@ -94,7 +105,7 @@ fn draw_icons(entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, siz
         }
 
         cell_map.insert(path_name, cell);
-        c += size + size/3;
+        c += size + size / 3;
         if c > width {
             c = 0;
             r += 2 * size;
