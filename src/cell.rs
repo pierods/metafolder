@@ -1,4 +1,6 @@
-use gtk::{Align, EventSequenceState, glib, pango, WidgetPaintable};
+use std::process::Command;
+
+use gtk::{Align, EventSequenceState, GestureClick, glib, pango, WidgetPaintable};
 use gtk::gdk::ContentProvider;
 use gtk::glib::Value;
 use gtk::prelude::{BoxExt, WidgetExt};
@@ -36,16 +38,18 @@ pub fn make_cell(dir_item: files::DirItem, size: i32) -> gtk::Box {
 
     let drag_source = gtk::DragSource::new();
     drag_source.set_actions(DRAG_ACTION);
+    let path_copy = String::from(path_name.as_str());
     drag_source.connect_prepare(
         clone!(@weak  desktop_icon => @default-return None, move |me, _, _| {
             me.set_state(EventSequenceState::Claimed);
-            Some(ContentProvider::for_value(&Value::from(path_name.clone())))
+            Some(ContentProvider::for_value(&Value::from(&path_copy)))
         })
     );
     let w_p = WidgetPaintable::new(Some(&desktop_icon));
     //TODO hot_x, hot_y
     drag_source.set_icon(Some(&w_p), 0, 0);
     desktop_icon.add_controller(drag_source);
+    desktop_icon.add_controller(clicked(String::from(path_name)));
 
     desktop_icon
 }
@@ -68,8 +72,19 @@ fn generate_icon(dir_item: files::DirItem, size: i32) -> gtk::Image {
     } else {
         img = gtk::Image::from_icon_name("x-office-document");
     }
-
-
     img.set_pixel_size(size);
     img
+}
+
+fn clicked(path_name: String) -> GestureClick {
+    let gesture_click = GestureClick::new();
+       gesture_click.connect_pressed(move |_, clicks, _, _| {
+        if clicks == 2 {
+            match Command::new("xdg-open").args([path_name.clone()]).output() {
+                Ok(_) => {}
+                Err(error) => {println!("{}", error)}
+            }
+        }
+    });
+    gesture_click
 }

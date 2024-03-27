@@ -103,5 +103,3 @@ fn draw_icons(entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, siz
     }
     cell_map
 }
-
-
