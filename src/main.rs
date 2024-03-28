@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 mod folder;
 mod files;
+mod cell;
 
 const APP_ID: &str = "org.github.pierods.metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
