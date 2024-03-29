@@ -4,6 +4,7 @@ use std::io::{Read, Write};
 use gtk::{Application, ApplicationWindow, glib};
 use gtk::gdk;
 use gtk::gdk::DragAction;
+use gtk::glib::Type;
 use gtk::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +16,7 @@ const APP_ID: &str = "org.github.pierods.metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
 const ICON_SIZE: i32 = 60;
 const INITIAL_DESKTOP_WIDTH: i32 = 1024;
+const DROP_TYPE : Type = Type::VARIANT;
 
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();

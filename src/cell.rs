@@ -1,15 +1,22 @@
 use crate::glib::clone;
-use gtk::{Align, GestureClick, WidgetPaintable, glib, pango, EventSequenceState, gdk::ContentProvider, glib::Value, prelude::GestureExt};
+use gtk::{Align, GestureClick, WidgetPaintable, glib, pango, EventSequenceState, gdk::ContentProvider, glib::Value, prelude::GestureExt, graphene::Point};
 use std::process::Command;
-use gtk::prelude::{BoxExt, WidgetExt};
+use gtk::prelude::{BoxExt, ToVariant, WidgetExt};
 use crate::{DRAG_ACTION, files};
+
+#[derive(Default, Debug, PartialEq, glib::Variant)]
+pub(crate) struct DNDInfo {
+    pub(crate) path: String,
+    pub(crate) w : f64,
+    pub(crate) h : f64,
+    pub(crate) pos_x: f64,
+    pub(crate) pos_y: f64,
+}
 
 pub fn make_cell(dir_item: files::DirItem, size: i32) -> gtk::Box {
     let path_name = dir_item.path_name.clone();
     let name = dir_item.name.clone();
     let img = generate_icon(dir_item, size);
-
-    //let double_click_controller = gtk::
     let g_text = glib::markup_escape_text(name.as_str());
     let pango_string = String::from("<span font_size=\"small\">") + g_text.as_str() + "</span>";
     let label = gtk::Label::new(Option::Some(pango_string.as_str()));
@@ -30,21 +37,7 @@ pub fn make_cell(dir_item: files::DirItem, size: i32) -> gtk::Box {
     desktop_icon.set_spacing(3);
     desktop_icon.append(&img);
     desktop_icon.append(&label);
-
-    let drag_source = gtk::DragSource::new();
-    drag_source.set_actions(DRAG_ACTION);
-    let path_copy = String::from(path_name.as_str());
-    drag_source.connect_prepare(
-        clone!(@weak  desktop_icon => @default-return None, move |me, x, y| {
-            me.set_state(EventSequenceState::Claimed);
-            Some(ContentProvider::for_value(&Value::from(&path_copy)))
-        })
-    );
-    let w_p = WidgetPaintable::new(Some(&desktop_icon));
-    //TODO hot_x, hot_y
-    drag_source.set_icon(Some(&w_p), 0, 0);
-    desktop_icon.add_controller(drag_source);
-    desktop_icon.add_controller(clicked(String::from(path_name)));
+    desktop_icon.add_controller(make_clicked_controller(String::from(path_name)));
 
     desktop_icon
 }
@@ -71,13 +64,13 @@ fn generate_icon(dir_item: files::DirItem, size: i32) -> gtk::Image {
     img
 }
 
-fn clicked(path_name: String) -> GestureClick {
+fn make_clicked_controller(path_name: String) -> GestureClick {
     let gesture_click = GestureClick::new();
-       gesture_click.connect_pressed(move |_, clicks, _, _| {
+    gesture_click.connect_pressed(move |_, clicks, _, _| {
         if clicks == 2 {
             match Command::new("xdg-open").args([path_name.clone()]).output() {
                 Ok(_) => {}
-                Err(error) => {println!("{}", error)}
+                Err(error) => { println!("{}", error) }
             }
         }
     });
