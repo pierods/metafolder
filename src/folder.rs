@@ -37,11 +37,11 @@ pub(crate) fn draw_folder(window: &ApplicationWindow) {
     let drop_target = gtk::DropTarget::new(DROP_TYPE, DRAG_ACTION);
 
     let d = desktop.clone();
-    drop_target.connect_drop(move |drop_target, value, x, y| {
-        let drop_result = extract_from_variant(value);
-        match drop_result {
+    drop_target.connect_drop(move |drop_target, dnd_msg, x, y| {
+        let dnd_info_result = extract_from_variant(dnd_msg);
+        match dnd_info_result {
             Ok(csp) => {
-                if check_for_underlying_icon(d.borrow().as_ref(), x, y, csp.w, csp.h) {
+                if is_something_underneath(d.borrow().as_ref(), x, y, csp.w, csp.h) {
                     return false;
                 }
                 let c = desktop_props_rc.clone();
@@ -72,20 +72,27 @@ fn extract_from_variant(v: &Value) -> Result<DNDInfo, Box<dyn Error>> {
     }
 }
 
-fn check_for_underlying_icon(d: &Fixed, x: f64, y: f64, w: f64, h: f64) -> bool {
-    let p1x = x;
-    let p1y = y;
-    let widget_opt = d.pick(x, y, PickFlags::DEFAULT);
-    match widget_opt {
-        None => {
-            panic!();
-        }
-        Some(underlying_icon) => {
-            let widget_name = underlying_icon.type_().to_string();
-            println!("{}",widget_name) ;
-                return false;
+fn is_something_underneath(d: &Fixed, x: f64, y: f64, w: f64, h: f64) -> bool {
+    struct Point {
+        x: f64,
+        y: f64,
+    }
+    let points: [Point; 4] = [Point { x, y }, Point { x: x + w, y }, Point { x, y: y + h }, Point { x: x + w, y: y + h }];
+    for p in points {
+        let widget_opt = d.pick(p.x, p.y, PickFlags::DEFAULT);
+        match widget_opt {
+            None => {
+                panic!();
+            }
+            Some(underlying_icon) => {
+                let widget_type = underlying_icon.type_().to_string();
+                if widget_type != "GtkFixed" {
+                    return true;
+                }
+            }
         }
     }
+    false
 }
 
 fn draw_icons(entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoDesktop) -> HashMap<String, gtk::Box> {
@@ -116,8 +123,7 @@ fn draw_icons(entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, siz
     cell_map
 }
 
-fn make_drag_source(path_name : String, desktop_icon: &gtk::Box, layout: &Fixed) -> gtk::DragSource {
-
+fn make_drag_source(path_name: String, desktop_icon: &gtk::Box, layout: &Fixed) -> gtk::DragSource {
     let drag_source = gtk::DragSource::new();
     drag_source.set_actions(DRAG_ACTION);
     let path_copy = String::from(path_name.as_str());
