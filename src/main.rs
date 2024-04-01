@@ -28,13 +28,14 @@ fn main() -> glib::ExitCode {
 struct Desktop {
     path_name: String,
     background_color: String,
+    cell_size: i32,
     cell_map: HashMap<String, gtk::Box>,
 }
 
 fn build_ui(app: &Application) {
     let window = ApplicationWindow::builder().application(app).title("metafolder").build();
     window.set_default_size(1024, 768);
-    window.connect_maximized_notify(|win: &ApplicationWindow| { println!("*****************************{}", win.width()) });
+    //window.connect_maximized_notify(|win: &ApplicationWindow| { println!("*****************************{}", win.width()) });
     window.maximize();
 
     let provider = gtk::CssProvider::new();

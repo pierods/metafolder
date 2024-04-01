@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::rc::Rc;
@@ -14,6 +14,7 @@ use gtk::prelude::GtkWindowExt;
 
 use crate::{cell, Desktop, DRAG_ACTION, DROP_TYPE, files, folder, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
 use crate::cell::DNDInfo;
+use crate::files::{MemoDesktop, MemoIcon};
 
 pub(crate) fn draw_folder(window: &ApplicationWindow) {
     let desktop_props_rc: Rc<RefCell<Desktop>> = Rc::new(RefCell::new(Desktop::default()));
@@ -34,9 +35,9 @@ pub(crate) fn draw_folder(window: &ApplicationWindow) {
     scrolled_window.set_child(Option::<&gtk::Fixed>::Some(desktop.borrow().as_ref()));
     window.set_child(Option::Some(&scrolled_window));
 
+    let d = desktop.clone();
     let drop_target = gtk::DropTarget::new(DROP_TYPE, DRAG_ACTION);
 
-    let d = desktop.clone();
     drop_target.connect_drop(move |drop_target, dnd_msg, x, y| {
         let dnd_info_result = extract_from_variant(dnd_msg);
         match dnd_info_result {
@@ -48,7 +49,8 @@ pub(crate) fn draw_folder(window: &ApplicationWindow) {
                 let desktop_props = c.borrow();
                 let cell = desktop_props.cell_map.get(csp.path.as_str()).expect("Fatal: cannot find cell");
                 d.borrow().move_(cell, x, y);
-                files::save_settings(desktop_props, csp.path.as_str(), x, y);
+                let memo_desktop = make_settings(desktop_props, d.borrow().as_ref(), csp.path.as_str(), x, y);
+                files::save_settings(memo_desktop);
                 true
             }
             Err(err) => {
@@ -60,6 +62,33 @@ pub(crate) fn draw_folder(window: &ApplicationWindow) {
     desktop.borrow().add_controller(drop_target);
 }
 
+fn make_settings(desktop_props: Ref<Desktop>, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> MemoDesktop {
+
+    let mut memo_desktop = MemoDesktop::default();
+    let mut icons: HashMap<String, MemoIcon> = HashMap::new();
+
+    memo_desktop.path_name = desktop_props.path_name.clone();
+    memo_desktop.background_color = desktop_props.background_color.clone();
+    for (path, gbox) in desktop_props.cell_map.clone() {
+        let memo_icon: MemoIcon;
+        if path == icon_file_path {
+            memo_icon = MemoIcon {
+                position_x: x as i32,
+                position_y: y as i32,
+            };
+        } else {
+            //let bounds = gbox.allocation();
+            let bounds = get_widget_bounds(desktop, &gbox);
+            memo_icon = MemoIcon {
+                position_x: bounds.x() as i32,
+                position_y: bounds.y() as i32,
+            };
+        }
+        icons.insert(path, memo_icon);
+    }
+    memo_desktop.icons = icons;
+    memo_desktop
+}
 
 fn extract_from_variant(v: &Value) -> Result<DNDInfo, Box<dyn Error>> {
     let variant = v.get::<Variant>()?;
@@ -133,14 +162,11 @@ fn make_drag_source(path_name: String, desktop_icon: &gtk::Box, layout: &Fixed) 
             me.set_state(EventSequenceState::Claimed);
             let mut dnd_info  = DNDInfo::default();
             dnd_info.path = path_copy.to_string();
-            let transform = l_clone.child_transform(&desktop_icon).expect("Fatal: cannot get layout.child_transform");
-            let bounds = desktop_icon.compute_bounds(&desktop_icon).expect("Fatal: cannot get cell.compute_bounds");
-            let rect = Rect::new(bounds.x(), bounds.y(), bounds.width(), bounds.height());
-            let actual_pos = transform.transform_bounds(&rect);
-            dnd_info.pos_x = actual_pos.x() as f64;
-            dnd_info.pos_y = actual_pos.y() as f64;
-            dnd_info.w = bounds.width() as f64;
-            dnd_info.h = bounds.height() as f64;
+            let actual_bounds = get_widget_bounds(l_clone.as_ref(), &desktop_icon);
+            dnd_info.pos_x = actual_bounds.x() as f64;
+            dnd_info.pos_y = actual_bounds.y() as f64;
+            dnd_info.w = actual_bounds.width() as f64;
+            dnd_info.h = actual_bounds.height() as f64;
             println!("{:?}", dnd_info);
             let w_p = WidgetPaintable::new(Some(&desktop_icon));
             //TODO hot_x, hot_y
@@ -153,4 +179,13 @@ fn make_drag_source(path_name: String, desktop_icon: &gtk::Box, layout: &Fixed) 
     //TODO hot_x, hot_y
     drag_source.set_icon(Some(&w_p), 0, 0);
     drag_source
+}
+
+fn get_widget_bounds(container: &Fixed, w: &gtk::Box) -> Rect {
+    let transform = container.child_transform(w).expect("Fatal: cannot get layout.child_transform");
+    let bounds = w.compute_bounds(w).expect("Fatal: cannot get cell.compute_bounds");
+    let rect = Rect::new(bounds.x(), bounds.y(), bounds.width(), bounds.height());
+    let actual_bounds = transform.transform_bounds(&rect);
+    //println!("{:?}", actual_bounds);
+    actual_bounds
 }
