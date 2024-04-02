@@ -1,14 +1,18 @@
+use std::cell::RefCell;
 use crate::glib::clone;
-use gtk::{Align, GestureClick, WidgetPaintable, glib, pango, EventSequenceState, gdk::ContentProvider, glib::Value, prelude::GestureExt, graphene::Point};
+use gtk::{Align, GestureClick, WidgetPaintable, glib, pango, EventSequenceState, gdk::ContentProvider, glib::Value, prelude::GestureExt, graphene::Point, Widget, ApplicationWindow};
 use std::process::Command;
-use gtk::prelude::{BoxExt, ToVariant, WidgetExt};
-use crate::{DRAG_ACTION, files};
+use std::rc::Rc;
+use gtk::ffi::GtkApplicationWindow;
+use gtk::prelude::{BoxExt, Cast, ToVariant, WidgetExt};
+use crate::{DRAG_ACTION, files, folder};
+use crate::files::DirItem;
 
 #[derive(Default, Debug, PartialEq, glib::Variant)]
 pub(crate) struct DNDInfo {
     pub(crate) path: String,
-    pub(crate) w : f64,
-    pub(crate) h : f64,
+    pub(crate) w: f64,
+    pub(crate) h: f64,
     pub(crate) pos_x: f64,
     pub(crate) pos_y: f64,
 }
@@ -16,9 +20,9 @@ pub(crate) struct DNDInfo {
 pub fn make_cell(dir_item: files::DirItem, size: i32) -> gtk::Box {
     let path_name = dir_item.path_name.clone();
     let name = dir_item.name.clone();
-    let img = generate_icon(dir_item, size);
+    let img = generate_icon(&dir_item, size);
     let g_text = glib::markup_escape_text(name.as_str());
-    let pango_string = String::from("<span font_size=\"small\">") + g_text.as_str() + "</span>";
+    let pango_string = String::from("<span font_size=\"small\" font_weight=\"bold\"  color=\"white\">") + g_text.as_str() + "</span>";
     let label = gtk::Label::new(Option::Some(pango_string.as_str()));
     label.set_use_markup(true);
     label.set_ellipsize(pango::EllipsizeMode::End);
@@ -37,24 +41,46 @@ pub fn make_cell(dir_item: files::DirItem, size: i32) -> gtk::Box {
     desktop_icon.set_spacing(3);
     desktop_icon.append(&img);
     desktop_icon.append(&label);
-    desktop_icon.add_controller(make_clicked_controller(String::from(path_name)));
+    let gesture_click = GestureClick::new();
+    gesture_click.connect_pressed(clone!(@weak  desktop_icon => @default-return (), move |_, clicks, _, _| {
+        if clicks == 2 {
+            if dir_item.mime_type == "inode/directory" {
+                let root = desktop_icon.root().unwrap();
+                let app_window_result = root.downcast::<ApplicationWindow>();
+                match app_window_result {
+                    Ok(app_win) => {
+                        folder::draw_folder(dir_item.path_name.clone(), &app_win);
+                        return
+                    }
+                    Err(r) => {println!("{:?} is not an application window", r)}
 
+                }
+                println!("{}", dir_item.path_name);
+
+            }
+            match Command::new("xdg-open").args([dir_item.path_name.clone()]).output() {
+                Ok(_) => {}
+                Err(error) => { println!("{}", error) }
+            }
+        }
+    }));
+    desktop_icon.add_controller(gesture_click);
     desktop_icon
 }
 
-fn generate_icon(dir_item: files::DirItem, size: i32) -> gtk::Image {
+fn generate_icon(dir_item: &files::DirItem, size: i32) -> gtk::Image {
     let img: gtk::Image;
     //println!("{}", dir_item.mime_type);
 
-    if let Some(gicon) = dir_item.icon {
+    if let Some(gicon) = &dir_item.icon {
         if dir_item.mime_type.starts_with("image") {
             img = gtk::Image::from_file(dir_item.path_name.clone());
         } else {
             match dir_item.mime_type.as_str() {
                 "application/pdf" => {
-                    img = gtk::Image::from_gicon(&gicon)
+                    img = gtk::Image::from_gicon(gicon)
                 }
-                _ => img = gtk::Image::from_gicon(&gicon)
+                _ => img = gtk::Image::from_gicon(gicon)
             }
         }
     } else {
@@ -62,17 +88,4 @@ fn generate_icon(dir_item: files::DirItem, size: i32) -> gtk::Image {
     }
     img.set_pixel_size(size);
     img
-}
-
-fn make_clicked_controller(path_name: String) -> GestureClick {
-    let gesture_click = GestureClick::new();
-    gesture_click.connect_pressed(move |_, clicks, _, _| {
-        if clicks == 2 {
-            match Command::new("xdg-open").args([path_name.clone()]).output() {
-                Ok(_) => {}
-                Err(error) => { println!("{}", error) }
-            }
-        }
-    });
-    gesture_click
 }

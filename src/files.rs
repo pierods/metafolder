@@ -154,3 +154,11 @@ pub(crate) fn load_settings(mut path: String) -> MemoDesktop {
 
     memo_desktop
 }
+
+pub fn initial_dir() -> String {
+    let mut path_name = home_path();
+    if try_file((path_name.clone() + "/Desktop").as_str()) {
+        path_name += "/Desktop";
+    }
+    path_name
+}

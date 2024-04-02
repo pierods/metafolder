@@ -48,6 +48,5 @@ fn build_ui(app: &Application) {
     );
 
     window.present();
-    folder::draw_folder(&window);
+    folder::draw_folder(files::initial_dir(), &window);
 }
-

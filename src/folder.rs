@@ -8,6 +8,7 @@ use gtk::gdk::ContentProvider;
 use gtk::glib::{clone, Value};
 use gtk::glib::property::PropertyGet;
 use gtk::graphene::Rect;
+use gtk::gsk::Transform;
 use gtk::prelude::{FixedExt, ObjectExt, ToVariant, WidgetExt};
 use gtk::prelude::GestureExt;
 use gtk::prelude::GtkWindowExt;
@@ -16,15 +17,12 @@ use crate::{cell, Desktop, DRAG_ACTION, DROP_TYPE, files, folder, ICON_SIZE, INI
 use crate::cell::DNDInfo;
 use crate::files::{MemoDesktop, MemoIcon};
 
-pub(crate) fn draw_folder(window: &ApplicationWindow) {
+pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     let desktop_props_rc: Rc<RefCell<Desktop>> = Rc::new(RefCell::new(Desktop::default()));
     let c = desktop_props_rc.clone();
     let mut desktop_props = c.borrow_mut();
 
-    desktop_props.path_name = files::home_path();
-    if files::try_file((desktop_props.path_name.clone() + "/Desktop").as_str()) {
-        desktop_props.path_name += "/Desktop";
-    }
+    desktop_props.path_name = path;
     let entries = files::get_entries(desktop_props.path_name.clone());
 
     let desktop_rc = Rc::new(RefCell::new(gtk::Fixed::new()));
@@ -63,7 +61,6 @@ pub(crate) fn draw_folder(window: &ApplicationWindow) {
 }
 
 fn make_settings(desktop_props: Ref<Desktop>, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> MemoDesktop {
-
     let mut memo_desktop = MemoDesktop::default();
     let mut icons: HashMap<String, MemoIcon> = HashMap::new();
 
@@ -167,7 +164,6 @@ fn make_drag_source(path_name: String, desktop_icon: &gtk::Box, layout: &Fixed) 
             dnd_info.pos_y = actual_bounds.y() as f64;
             dnd_info.w = actual_bounds.width() as f64;
             dnd_info.h = actual_bounds.height() as f64;
-            println!("{:?}", dnd_info);
             let w_p = WidgetPaintable::new(Some(&desktop_icon));
             //TODO hot_x, hot_y
             me.set_icon(Some(&w_p), 0, 0);
@@ -182,10 +178,19 @@ fn make_drag_source(path_name: String, desktop_icon: &gtk::Box, layout: &Fixed) 
 }
 
 fn get_widget_bounds(container: &Fixed, w: &gtk::Box) -> Rect {
-    let transform = container.child_transform(w).expect("Fatal: cannot get layout.child_transform");
-    let bounds = w.compute_bounds(w).expect("Fatal: cannot get cell.compute_bounds");
-    let rect = Rect::new(bounds.x(), bounds.y(), bounds.width(), bounds.height());
-    let actual_bounds = transform.transform_bounds(&rect);
-    //println!("{:?}", actual_bounds);
-    actual_bounds
+    let transform_opt = container.child_transform(w);
+    match transform_opt {
+        Some(transform) => {
+            let bounds = w.compute_bounds(w).expect("Fatal: cannot get cell.compute_bounds");
+            let rect = Rect::new(bounds.x(), bounds.y(), bounds.width(), bounds.height());
+            let actual_bounds = transform.transform_bounds(&rect);
+            //println!("{:?}", actual_bounds);
+            actual_bounds
+        }
+        None => {
+            let bounds = w.compute_bounds(w).expect("Fatal: cannot get cell.compute_bounds");
+            println!("Unexpected: cannot get Fixed.child_transform(icon) - container : {:?}, icon: {:?}, bounds: {:?}", container, w, bounds);
+            bounds
+        }
+    }
 }
