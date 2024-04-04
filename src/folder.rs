@@ -5,10 +5,11 @@ use std::rc::Rc;
 use gtk::{ApplicationWindow, EventSequenceState, Fixed, glib, WidgetPaintable};
 use gtk::gdk::ContentProvider;
 use gtk::glib::{clone, Value};
-use gtk::glib::property::PropertyGet;
+use gtk::glib::property::{PropertyGet, PropertySet};
 use gtk::prelude::{FixedExt, ObjectExt, ToVariant, WidgetExt};
 use gtk::prelude::GestureExt;
 use gtk::prelude::GtkWindowExt;
+use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{cell, Desktop, DRAG_ACTION, DROP_TYPE, files, folder, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
 use crate::cell::DNDInfo;
@@ -19,7 +20,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     let c = desktop_props_rc.clone();
     let mut desktop_props = c.borrow_mut();
 
-    desktop_props.path_name = path;
+    desktop_props.path_name = path.clone();
     let entries = files::get_entries(desktop_props.path_name.clone());
 
     let desktop_rc = Rc::new(RefCell::new(gtk::Fixed::new()));
@@ -55,6 +56,8 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
         }
     });
     desktop.borrow().add_controller(drop_target);
+    let data_store = gtk_wrappers::get_application(<gtk::Fixed as AsRef<gtk::Fixed>>::as_ref(&desktop.borrow()));
+    data_store.imp().current_path.replace(String::from(path.clone()));
 }
 
 fn make_settings(desktop_props: Ref<Desktop>, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> MemoDesktop {

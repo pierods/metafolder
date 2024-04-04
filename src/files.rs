@@ -162,3 +162,21 @@ pub fn initial_dir() -> String {
     }
     path_name
 }
+
+pub fn up(path: &String) -> Option<String> {
+    if path == "/" {
+        return None;
+    }
+    let std_path = Path::new(&path);
+    let mut ancestors = std_path.ancestors();
+    ancestors.next();
+    match ancestors.next() {
+        None => { return None; }
+        Some(ancestor) => {
+            match ancestor.to_str() {
+                None => { return None; }
+                Some(parent) => { return Some(String::from(parent)); }
+            }
+        }
+    }
+}

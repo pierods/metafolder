@@ -1,11 +1,11 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use gtk::{glib, prelude::*, subclass::prelude::*};
 
 #[derive(Debug, Default)]
 // By implementing Default we don't have to provide a `new` fn in our
 // ObjectSubclass impl.
 pub struct AppWithDatastore {
-    current_path: String,
+    pub(crate) current_path: RefCell<String>,
     pub(crate) drilldown : Cell<bool>,
 }
 

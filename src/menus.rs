@@ -1,18 +1,30 @@
-use gtk::AccessibleRole::{Application, Label, Switch};
 use gtk::gio::MenuModel;
 use gtk::glib::Propagation;
-use gtk::{ApplicationWindow, HeaderBar, Root};
-use gtk::prelude::{ApplicationExt, ButtonExt, Cast, GtkWindowExt, WidgetExt};
+use gtk::HeaderBar;
+use gtk::prelude::{ButtonExt, Cast, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
-use crate::appwindow_with_datastore::AppWithDatastore;
 
-pub(crate) fn build_menu(mwnubar: Option<MenuModel>) {}
+use crate::{files, gtk_wrappers};
+use crate::folder::draw_folder;
+
+pub(crate) fn build_menu(menubar: Option<MenuModel>) {}
 
 pub(crate) fn make_header_bar() -> HeaderBar {
     let bar = HeaderBar::new();
 
     let up = gtk::Button::builder().label("up").build();
-    up.connect_clicked(|b| {});
+    up.connect_clicked(|b| {
+        let ds = gtk_wrappers::get_application(b);
+        let current_path = <std::cell::RefCell<std::string::String> as Clone>::clone(&ds.imp().current_path).into_inner();
+        match files::up(&current_path) {
+            None => {}
+            Some(up) => {
+                let root = b.root().unwrap();
+                let app_window = root.downcast::<gtk::ApplicationWindow>().unwrap();
+                draw_folder(up, &app_window)
+            }
+        }
+    });
 
     bar.pack_start(&up);
     let drilldown_switch = gtk::Switch::new();
@@ -25,10 +37,7 @@ pub(crate) fn make_header_bar() -> HeaderBar {
     bar.pack_start(&memorize_switch);
 
     drilldown_switch.connect_state_set(|sw, state| {
-        let root = sw.root().unwrap();
-        let app_window = root.downcast::<ApplicationWindow>().unwrap();
-        let app = app_window.application().unwrap();
-        let ds = app.downcast::<AppWithDatastore>().unwrap();
+        let ds = gtk_wrappers::get_application(sw);
         ds.imp().drilldown.set(state);
         Propagation::Proceed
     });
