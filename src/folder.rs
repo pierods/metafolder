@@ -1,19 +1,16 @@
 use std::cell::{Ref, RefCell};
 use std::collections::{HashMap, HashSet};
-use std::error::Error;
 use std::rc::Rc;
 
-use gtk::{ApplicationWindow, EventSequenceState, Fixed, glib, glib::Variant, PickFlags, WidgetPaintable};
+use gtk::{ApplicationWindow, EventSequenceState, Fixed, glib, WidgetPaintable};
 use gtk::gdk::ContentProvider;
 use gtk::glib::{clone, Value};
 use gtk::glib::property::PropertyGet;
-use gtk::graphene::Rect;
-use gtk::gsk::Transform;
 use gtk::prelude::{FixedExt, ObjectExt, ToVariant, WidgetExt};
 use gtk::prelude::GestureExt;
 use gtk::prelude::GtkWindowExt;
 
-use crate::{cell, Desktop, DRAG_ACTION, DROP_TYPE, files, folder, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
+use crate::{cell, Desktop, DRAG_ACTION, DROP_TYPE, files, folder, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
 use crate::cell::DNDInfo;
 use crate::files::{MemoDesktop, MemoIcon};
 
@@ -37,10 +34,10 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     let drop_target = gtk::DropTarget::new(DROP_TYPE, DRAG_ACTION);
 
     drop_target.connect_drop(move |drop_target, dnd_msg, x, y| {
-        let dnd_info_result = extract_from_variant(dnd_msg);
+        let dnd_info_result = gtk_wrappers::extract_from_variant(dnd_msg);
         match dnd_info_result {
             Ok(csp) => {
-                if is_something_underneath(d.borrow().as_ref(), x, y, csp.w, csp.h) {
+                if gtk_wrappers::is_something_underneath(d.borrow().as_ref(), x, y, csp.w, csp.h) {
                     return false;
                 }
                 let c = desktop_props_rc.clone();
@@ -75,7 +72,7 @@ fn make_settings(desktop_props: Ref<Desktop>, desktop: &Fixed, icon_file_path: &
             };
         } else {
             //let bounds = gbox.allocation();
-            let bounds = get_widget_bounds(desktop, &gbox);
+            let bounds = gtk_wrappers::get_widget_bounds(desktop, &gbox);
             memo_icon = MemoIcon {
                 position_x: bounds.x() as i32,
                 position_y: bounds.y() as i32,
@@ -85,40 +82,6 @@ fn make_settings(desktop_props: Ref<Desktop>, desktop: &Fixed, icon_file_path: &
     }
     memo_desktop.icons = icons;
     memo_desktop
-}
-
-fn extract_from_variant(v: &Value) -> Result<DNDInfo, Box<dyn Error>> {
-    let variant = v.get::<Variant>()?;
-    let c_s_p_opt = variant.get::<DNDInfo>();
-    match c_s_p_opt {
-        None => { Result::Err("no dnd data")? }
-        Some(csp) => {
-            Result::Ok(csp)
-        }
-    }
-}
-
-fn is_something_underneath(d: &Fixed, x: f64, y: f64, w: f64, h: f64) -> bool {
-    struct Point {
-        x: f64,
-        y: f64,
-    }
-    let points: [Point; 4] = [Point { x, y }, Point { x: x + w, y }, Point { x, y: y + h }, Point { x: x + w, y: y + h }];
-    for p in points {
-        let widget_opt = d.pick(p.x, p.y, PickFlags::DEFAULT);
-        match widget_opt {
-            None => {
-                panic!();
-            }
-            Some(underlying_icon) => {
-                let widget_type = underlying_icon.type_().to_string();
-                if widget_type != "GtkFixed" {
-                    return true;
-                }
-            }
-        }
-    }
-    false
 }
 
 fn draw_icons(entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoDesktop) -> HashMap<String, gtk::Box> {
@@ -159,7 +122,7 @@ fn make_drag_source(path_name: String, desktop_icon: &gtk::Box, layout: &Fixed) 
             me.set_state(EventSequenceState::Claimed);
             let mut dnd_info  = DNDInfo::default();
             dnd_info.path = path_copy.to_string();
-            let actual_bounds = get_widget_bounds(l_clone.as_ref(), &desktop_icon);
+            let actual_bounds = gtk_wrappers::get_widget_bounds(l_clone.as_ref(), &desktop_icon);
             dnd_info.pos_x = actual_bounds.x() as f64;
             dnd_info.pos_y = actual_bounds.y() as f64;
             dnd_info.w = actual_bounds.width() as f64;
@@ -175,22 +138,4 @@ fn make_drag_source(path_name: String, desktop_icon: &gtk::Box, layout: &Fixed) 
     //TODO hot_x, hot_y
     drag_source.set_icon(Some(&w_p), 0, 0);
     drag_source
-}
-
-fn get_widget_bounds(container: &Fixed, w: &gtk::Box) -> Rect {
-    let transform_opt = container.child_transform(w);
-    match transform_opt {
-        Some(transform) => {
-            let bounds = w.compute_bounds(w).expect("Fatal: cannot get cell.compute_bounds");
-            let rect = Rect::new(bounds.x(), bounds.y(), bounds.width(), bounds.height());
-            let actual_bounds = transform.transform_bounds(&rect);
-            //println!("{:?}", actual_bounds);
-            actual_bounds
-        }
-        None => {
-            let bounds = w.compute_bounds(w).expect("Fatal: cannot get cell.compute_bounds");
-            println!("Unexpected: cannot get Fixed.child_transform(icon) - container : {:?}, icon: {:?}, bounds: {:?}", container, w, bounds);
-            bounds
-        }
-    }
 }

@@ -7,10 +7,16 @@ use gtk::gdk::DragAction;
 use gtk::glib::Type;
 use gtk::prelude::*;
 use serde::{Deserialize, Serialize};
+use crate::appwindow_with_datastore::AppWithDatastore;
+
+use crate::menus::make_header_bar;
 
 mod folder;
 mod files;
 mod cell;
+mod menus;
+mod appwindow_with_datastore;
+mod gtk_wrappers;
 
 const APP_ID: &str = "org.github.pierods.metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
@@ -19,7 +25,11 @@ const INITIAL_DESKTOP_WIDTH: i32 = 1024;
 const DROP_TYPE : Type = Type::VARIANT;
 
 fn main() -> glib::ExitCode {
-    let app = Application::builder().application_id(APP_ID).build();
+    //let app = Application::builder().application_id(APP_ID).build();
+    let app = AppWithDatastore::default();
+    //let to_app : gtk::Application = app.into();
+    // to_app.connect_activate(build_ui);
+    // to_app.run()
     app.connect_activate(build_ui);
     app.run()
 }
@@ -32,10 +42,10 @@ struct Desktop {
     cell_map: HashMap<String, gtk::Box>,
 }
 
-fn build_ui(app: &Application) {
+fn build_ui(app: &AppWithDatastore) {
     let window = ApplicationWindow::builder().application(app).title("metafolder").build();
+    window.set_titlebar(Some(&make_header_bar()));
     window.set_default_size(1024, 768);
-    //window.connect_maximized_notify(|win: &ApplicationWindow| { println!("*****************************{}", win.width()) });
     window.maximize();
 
     let provider = gtk::CssProvider::new();
