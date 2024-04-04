@@ -1,5 +1,5 @@
 use gtk::{ApplicationWindow, Fixed, PickFlags};
-use gtk::prelude::{Cast, FixedExt, GtkWindowExt, ObjectExt, WidgetExt};
+use gtk::prelude::{Cast, FixedExt, GtkWindowExt, IsA, ObjectExt, WidgetExt};
 use gtk::glib::{Value, Variant};
 use std::error::Error;
 use gtk::graphene::Rect;
@@ -58,7 +58,7 @@ pub fn get_widget_bounds(container: &Fixed, w: &gtk::Box) -> Rect {
     }
 }
 
-pub fn get_application(sw : & impl WidgetExt) -> AppWithDatastore {
+pub fn get_application(sw : & impl IsA<gtk::Widget>) -> AppWithDatastore {
 
     let root = sw.root().unwrap();
     let app_window = root.downcast::<ApplicationWindow>().unwrap();

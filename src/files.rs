@@ -119,6 +119,7 @@ pub struct MemoDesktop {
     pub(crate) path_name: String,
     pub(crate) background_color: String,
     cell_size: i32,
+    drilldown: bool,
     pub(crate) icons: HashMap<String, MemoIcon>,
 }
 

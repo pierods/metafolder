@@ -25,11 +25,7 @@ const INITIAL_DESKTOP_WIDTH: i32 = 1024;
 const DROP_TYPE : Type = Type::VARIANT;
 
 fn main() -> glib::ExitCode {
-    //let app = Application::builder().application_id(APP_ID).build();
     let app = AppWithDatastore::default();
-    //let to_app : gtk::Application = app.into();
-    // to_app.connect_activate(build_ui);
-    // to_app.run()
     app.connect_activate(build_ui);
     app.run()
 }
@@ -49,7 +45,7 @@ fn build_ui(app: &AppWithDatastore) {
     window.maximize();
 
     let provider = gtk::CssProvider::new();
-    let bytes = glib::Bytes::from("window {background-color:rgba(80,80,80,80);}".as_bytes());
+    let bytes = glib::Bytes::from("window {background-color:rgba(80,80,80,80); border-radius: 7px;}".as_bytes());
     provider.load_from_bytes(&bytes);
     gtk::style_context_add_provider_for_display(
         &gdk::Display::default().expect("Could not connect to a display."),
