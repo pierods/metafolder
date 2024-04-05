@@ -16,7 +16,6 @@ use crate::gtk_wrappers::set_window_background;
 use crate::settings::MetaFolder;
 
 pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
-
     let entries = files::get_entries(path.clone());
 
     let desktop_rc = Rc::new(RefCell::new(gtk::Fixed::new()));
@@ -47,12 +46,12 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
                 }
                 let mf = data_store.imp().desktop.borrow();
                 let cell = mf.get_cell(csp.path.clone());
-                if let Some(err) = data_store.imp().desktop.borrow().update_cell_positions(desktop_clone.borrow().as_ref(), csp.path.as_str(), x, y)  {
-                    let alert =  gtk::AlertDialog::builder().modal(true).detail(err.to_string()).message("folder settings could not be saved").build();
+                if let Some(err) = data_store.imp().desktop.borrow().update_cell_positions(desktop_clone.borrow().as_ref(), csp.path.as_str(), x, y) {
+                    let alert = gtk::AlertDialog::builder().modal(true).detail(err.to_string()).message("folder settings could not be saved").build();
                     let root = <Fixed as AsRef<Fixed>>::as_ref(&desktop_clone.borrow()).root().unwrap();
                     let app_window: ApplicationWindow = root.downcast().unwrap();
                     alert.show(Some(&app_window));
-                    return false
+                    return false;
                 }
                 desktop_clone.borrow().move_(cell, x, y);
                 true

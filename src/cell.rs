@@ -68,7 +68,7 @@ pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box 
     desktop_icon
 }
 
-fn generate_icon(path : String, dir_item: &files::DirItem, size: i32) -> gtk::Image {
+fn generate_icon(path: String, dir_item: &files::DirItem, size: i32) -> gtk::Image {
     let img: gtk::Image;
 
     if let Some(gicon) = &dir_item.icon {

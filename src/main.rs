@@ -19,7 +19,7 @@ const APP_ID: &str = "org.github.pierods.metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
 const ICON_SIZE: i32 = 60;
 const INITIAL_DESKTOP_WIDTH: i32 = 1024;
-const DROP_TYPE : Type = Type::VARIANT;
+const DROP_TYPE: Type = Type::VARIANT;
 
 fn main() -> glib::ExitCode {
     let app = AppWithDatastore::default();

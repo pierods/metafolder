@@ -27,7 +27,6 @@ pub(crate) fn home_path() -> String {
 }
 
 pub(crate) fn get_entries(p: String) -> HashSet<DirItem> {
-
     let mut entries: HashSet<DirItem> = HashSet::new();
     let paths = fs::read_dir(p).expect("Impossible to get your home dir!");
 
@@ -66,7 +65,6 @@ pub struct DirItem {
 
 
 fn get_file_info(path_name: String) -> Option<DirItem> {
-
     let mut dir_item: DirItem = DirItem::default();
     let g_file = gio::File::for_path(path_name.clone());
 
@@ -121,20 +119,20 @@ pub struct MemoFolder {
 }
 
 
-pub(crate) fn save_settings(path : String, memo_desktop: MemoFolder) -> Option<Error> {
+pub(crate) fn save_settings(path: String, memo_desktop: MemoFolder) -> Option<Error> {
     let serialized = serde_json::to_string_pretty(&memo_desktop).unwrap();
     let mut settings_path = path;
     settings_path.push_str(".metafolder");
-     match std::fs::OpenOptions::new().write(true).truncate(true).create(true).open(settings_path) {
-         Ok(mut f) => {
-             f.write_all(serialized.as_bytes()).unwrap();
-             f.flush().unwrap();
-             return None;
-         }
-         Err(error) => {
-             return Some(Error::from(error));
-         }
-     }
+    match std::fs::OpenOptions::new().write(true).truncate(true).create(true).open(settings_path) {
+        Ok(mut f) => {
+            f.write_all(serialized.as_bytes()).unwrap();
+            f.flush().unwrap();
+            return None;
+        }
+        Err(error) => {
+            return Some(Error::from(error));
+        }
+    }
 }
 
 pub(crate) fn load_settings(mut path: String) -> MemoFolder {
@@ -156,7 +154,7 @@ pub(crate) fn load_settings(mut path: String) -> MemoFolder {
     let mut serialized = String::new();
     f.read_to_string(&mut serialized).unwrap();
 
-    let mut  memo_folder: MemoFolder = serde_json::from_str(serialized.as_str()).unwrap();
+    let mut memo_folder: MemoFolder = serde_json::from_str(serialized.as_str()).unwrap();
     if memo_folder.background_color == "" {
         memo_folder.background_color = "rgba(80, 80, 80, 255)".to_string();
     }

@@ -10,11 +10,11 @@ pub struct MetaFolder {
     cell_size: i32,
     pub(crate) drilldown: bool,
     pub(crate) cell_map: HashMap<String, gtk::Box>,
-    pub(crate) current_path : String,
+    pub(crate) current_path: String,
 }
 
 
-impl MetaFolder{
+impl MetaFolder {
     pub(crate) fn update_cell_positions(&self, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> Option<Error> {
         let mut memo_folder = MemoFolder::default();
         let mut icons: HashMap<String, MemoIcon> = HashMap::new();
@@ -56,7 +56,7 @@ impl MetaFolder{
         self.cell_map = new_metafolder.cell_map.clone();
     }
 
-    pub(crate) fn get_cell(&self, csp : String) -> &gtk::Box {
+    pub(crate) fn get_cell(&self, csp: String) -> &gtk::Box {
         self.cell_map.get(&csp).expect("Fatal: cannot find cell")
     }
 

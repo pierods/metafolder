@@ -8,7 +8,7 @@ use crate::settings::MetaFolder;
 // By implementing Default we don't have to provide a `new` fn in our
 // ObjectSubclass impl.
 pub struct AppWithDatastore {
-    pub(crate) desktop :RefCell<MetaFolder>,
+    pub(crate) desktop: RefCell<MetaFolder>,
 }
 
 #[glib::object_subclass]
@@ -19,5 +19,7 @@ impl ObjectSubclass for AppWithDatastore {
 }
 
 impl ObjectImpl for AppWithDatastore {}
+
 impl ApplicationImpl for AppWithDatastore {}
+
 impl GtkApplicationImpl for AppWithDatastore {}

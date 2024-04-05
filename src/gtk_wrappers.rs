@@ -59,8 +59,7 @@ pub fn get_widget_bounds(container: &Fixed, w: &gtk::Box) -> Rect {
     }
 }
 
-pub fn get_application(sw : & impl IsA<gtk::Widget>) -> AppWithDatastore {
-
+pub fn get_application(sw: &impl IsA<gtk::Widget>) -> AppWithDatastore {
     let root = sw.root().unwrap();
     let app_window = root.downcast::<ApplicationWindow>().unwrap();
     let app = app_window.application().unwrap();
@@ -91,10 +90,9 @@ pub fn set_window_background(rgba: String) {
     );
 }
 
-pub fn alert(sw : & impl IsA<gtk::Widget>, msg: String, err: String) {
-    let alert =  gtk::AlertDialog::builder().modal(true).detail(err).message(msg).build();
+pub fn alert(sw: &impl IsA<gtk::Widget>, msg: String, err: String) {
+    let alert = gtk::AlertDialog::builder().modal(true).detail(err).message(msg).build();
     let root = sw.root().unwrap();
     let app_window: ApplicationWindow = root.downcast().unwrap();
     alert.show(Some(&app_window));
-
 }
