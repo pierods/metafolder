@@ -30,11 +30,11 @@ fn main() -> glib::ExitCode {
     app.run()
 }
 
-#[derive(Default)]
-struct Desktop {
-    path_name: String,
+#[derive(Default, Debug)]
+struct MetaFolder {
     background_color: String,
     cell_size: i32,
+    drilldown: bool,
     cell_map: HashMap<String, gtk::Box>,
 }
 

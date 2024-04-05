@@ -1,13 +1,14 @@
 use std::cell::{Cell, RefCell};
 
 use gtk::{glib, prelude::*, subclass::prelude::*};
+use crate::MetaFolder;
 
 #[derive(Debug, Default)]
 // By implementing Default we don't have to provide a `new` fn in our
 // ObjectSubclass impl.
 pub struct AppWithDatastore {
+    pub(crate) desktop :RefCell<MetaFolder>,
     pub(crate) current_path: RefCell<String>,
-    pub(crate) drilldown : Cell<bool>,
 }
 
 #[glib::object_subclass]

@@ -2,8 +2,9 @@ use std::process::Command;
 
 use gtk::{Align, ApplicationWindow, GestureClick, glib, pango};
 use gtk::prelude::{BoxExt, Cast, ToVariant, WidgetExt};
+use gtk::subclass::prelude::ObjectSubclassIsExt;
 
-use crate::{files, folder};
+use crate::{files, folder, gtk_wrappers};
 use crate::glib::clone;
 
 #[derive(Default, Debug, PartialEq, glib::Variant)]
@@ -15,10 +16,10 @@ pub(crate) struct DNDInfo {
     pub(crate) pos_y: f64,
 }
 
-pub fn make_cell(dir_item: files::DirItem, size: i32) -> gtk::Box {
-    let path_name = dir_item.path_name.clone();
+pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box {
+    //let path_name = dir_item.path_name.clone();
     let name = dir_item.name.clone();
-    let img = generate_icon(&dir_item, size);
+    let img = generate_icon(path, &dir_item, size);
     let g_text = glib::markup_escape_text(name.as_str());
     let pango_string = String::from("<span font_size=\"small\" font_weight=\"bold\"  color=\"white\">") + g_text.as_str() + "</span>";
     let label = gtk::Label::new(Option::Some(pango_string.as_str()));
@@ -42,21 +43,21 @@ pub fn make_cell(dir_item: files::DirItem, size: i32) -> gtk::Box {
     let gesture_click = GestureClick::new();
     gesture_click.connect_pressed(clone!(@weak  desktop_icon => @default-return (), move |_, clicks, _, _| {
         if clicks == 2 {
+            let data_store = gtk_wrappers::get_application(<gtk::Box as AsRef<gtk::Box>>::as_ref(&desktop_icon));
+            let current_path = <std::cell::RefCell<String> as Clone>::clone(&data_store.imp().current_path).into_inner();
             if dir_item.mime_type == "inode/directory" {
                 let root = desktop_icon.root().unwrap();
                 let app_window_result = root.downcast::<ApplicationWindow>();
                 match app_window_result {
                     Ok(app_win) => {
-                        folder::draw_folder(dir_item.path_name.clone(), &app_win);
+                        folder::draw_folder(current_path + name.as_str(), &app_win);
                         return
                     }
                     Err(r) => {println!("{:?} is not an application window", r)}
 
                 }
-                println!("{}", dir_item.path_name);
-
             }
-            match Command::new("xdg-open").args([dir_item.path_name.clone()]).output() {
+            match Command::new("xdg-open").args([current_path + name.as_str()]).output() {
                 Ok(_) => {}
                 Err(error) => { println!("{}", error) }
             }
@@ -66,13 +67,13 @@ pub fn make_cell(dir_item: files::DirItem, size: i32) -> gtk::Box {
     desktop_icon
 }
 
-fn generate_icon(dir_item: &files::DirItem, size: i32) -> gtk::Image {
+fn generate_icon(path : String, dir_item: &files::DirItem, size: i32) -> gtk::Image {
     let img: gtk::Image;
     //println!("{}", dir_item.mime_type);
 
     if let Some(gicon) = &dir_item.icon {
         if dir_item.mime_type.starts_with("image") {
-            img = gtk::Image::from_file(dir_item.path_name.clone());
+            img = gtk::Image::from_file(path);
         } else {
             match dir_item.mime_type.as_str() {
                 "application/pdf" => {

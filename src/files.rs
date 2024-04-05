@@ -7,8 +7,10 @@ use std::path::Path;
 use gtk::gio;
 use gtk::gio::{Cancellable, FileInfo, FileType};
 use gtk::prelude::FileExt;
+use gtk::subclass::prelude::ObjectSubclassIsExt;
 use ignore::Error;
 use serde::{Deserialize, Serialize};
+use crate::gtk_wrappers;
 
 pub(crate) fn try_file(path: &str) -> bool {
     Path::new(path).exists()
@@ -59,7 +61,6 @@ pub(crate) fn get_entries(p: String) -> HashSet<DirItem> {
 #[derive(Eq, Hash, PartialEq, Default)]
 pub struct DirItem {
     pub(crate) name: String,
-    pub(crate) path_name: String,
     pub(crate) is_dir: bool,
     pub(crate) mime_type: String,
     pub(crate) icon: Option<gio::Icon>,
@@ -69,7 +70,7 @@ pub struct DirItem {
 fn get_file_info(path_name: String) -> Option<DirItem> {
     let mut dir_item: DirItem = DirItem::default();
 
-    dir_item.path_name = path_name.clone();
+    //dir_item.path_name = path_name.clone();
 
     let g_file = gio::File::for_path(path_name.clone());
 
@@ -116,8 +117,7 @@ pub struct MemoIcon {
 }
 
 #[derive(Default, Serialize, Deserialize, Debug)]
-pub struct MemoDesktop {
-    pub(crate) path_name: String,
+pub struct MemoFolder {
     pub(crate) background_color: String,
     cell_size: i32,
     drilldown: bool,
@@ -125,9 +125,9 @@ pub struct MemoDesktop {
 }
 
 
-pub(crate) fn save_settings(memo_desktop: MemoDesktop) -> Option<Error> {
+pub(crate) fn save_settings(path : String, memo_desktop: MemoFolder) -> Option<Error> {
     let serialized = serde_json::to_string_pretty(&memo_desktop).unwrap();
-    let mut settings_path = memo_desktop.path_name.clone();
+    let mut settings_path = path;
     settings_path.push_str("/.metafolder");
      match std::fs::OpenOptions::new().write(true).truncate(true).create(true).open(settings_path) {
          Ok(mut f) => {
@@ -141,10 +141,10 @@ pub(crate) fn save_settings(memo_desktop: MemoDesktop) -> Option<Error> {
      }
 }
 
-pub(crate) fn load_settings(mut path: String) -> MemoDesktop {
+pub(crate) fn load_settings(mut path: String) -> MemoFolder {
     path.push_str("/.metafolder");
     if !try_file(path.as_str()) {
-        return MemoDesktop::default();
+        return MemoFolder::default();
     }
     let mut f: fs::File;
     let f_result = std::fs::OpenOptions::new().read(true).open(path);
@@ -152,13 +152,13 @@ pub(crate) fn load_settings(mut path: String) -> MemoDesktop {
         Ok(file) => { f = file }
         Err(e) => {
             println!("{}", e);
-            return MemoDesktop::default();
+            return MemoFolder::default();
         }
     }
     let mut serialized = String::new();
     f.read_to_string(&mut serialized).unwrap();
 
-    let memo_desktop: MemoDesktop = serde_json::from_str(serialized.as_str()).unwrap();
+    let memo_desktop: MemoFolder = serde_json::from_str(serialized.as_str()).unwrap();
 
     memo_desktop
 }
