@@ -7,6 +7,7 @@ use std::path::Path;
 use gtk::gio;
 use gtk::gio::{Cancellable, FileInfo, FileType};
 use gtk::prelude::FileExt;
+use ignore::Error;
 use serde::{Deserialize, Serialize};
 
 pub(crate) fn try_file(path: &str) -> bool {
@@ -124,14 +125,20 @@ pub struct MemoDesktop {
 }
 
 
-pub(crate) fn save_settings(memo_desktop: MemoDesktop) {
+pub(crate) fn save_settings(memo_desktop: MemoDesktop) -> Option<Error> {
     let serialized = serde_json::to_string_pretty(&memo_desktop).unwrap();
     let mut settings_path = memo_desktop.path_name.clone();
     settings_path.push_str("/.metafolder");
-    let mut f = std::fs::OpenOptions::new().write(true).truncate(true).create(true).open(settings_path).unwrap();
-
-    f.write_all(serialized.as_bytes()).unwrap();
-    f.flush().unwrap();
+     match std::fs::OpenOptions::new().write(true).truncate(true).create(true).open(settings_path) {
+         Ok(mut f) => {
+             f.write_all(serialized.as_bytes()).unwrap();
+             f.flush().unwrap();
+             return None;
+         }
+         Err(error) => {
+             return Some(Error::from(error));
+         }
+     }
 }
 
 pub(crate) fn load_settings(mut path: String) -> MemoDesktop {

@@ -1,6 +1,7 @@
+use gtk::{ColorDialog, ColorDialogButton, HeaderBar};
+use gtk::gdk::RGBA;
 use gtk::gio::MenuModel;
 use gtk::glib::Propagation;
-use gtk::HeaderBar;
 use gtk::prelude::{ButtonExt, Cast, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
@@ -56,5 +57,14 @@ pub(crate) fn make_header_bar() -> HeaderBar {
 
     let commit = gtk::Button::builder().label("commit").build();
     bar.pack_start(&commit);
+
+    let background_dialog = ColorDialog::builder().modal(true).title("Pick a background color").with_alpha(true).build();
+    let background_color = ColorDialogButton::builder().rgba(&RGBA::new(80f32, 80f32, 80f32, 255f32)).dialog(&background_dialog).build();
+    bar.pack_start(&background_color);
+
+    let text_color_dialog = ColorDialog::builder().modal(true).title("Pick a text color").with_alpha(true).build();
+    let text_color = ColorDialogButton::builder().rgba(&RGBA::new(255f32, 255f32, 255f32, 255f32)).dialog(&text_color_dialog).build();
+    bar.pack_start(&text_color);
+
     bar
 }

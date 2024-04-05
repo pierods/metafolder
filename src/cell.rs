@@ -1,12 +1,10 @@
-use std::cell::RefCell;
-use crate::glib::clone;
-use gtk::{Align, GestureClick, WidgetPaintable, glib, pango, EventSequenceState, gdk::ContentProvider, glib::Value, prelude::GestureExt, graphene::Point, Widget, ApplicationWindow};
 use std::process::Command;
-use std::rc::Rc;
-use gtk::ffi::GtkApplicationWindow;
+
+use gtk::{Align, ApplicationWindow, GestureClick, glib, pango};
 use gtk::prelude::{BoxExt, Cast, ToVariant, WidgetExt};
-use crate::{DRAG_ACTION, files, folder};
-use crate::files::DirItem;
+
+use crate::{files, folder};
+use crate::glib::clone;
 
 #[derive(Default, Debug, PartialEq, glib::Variant)]
 pub(crate) struct DNDInfo {

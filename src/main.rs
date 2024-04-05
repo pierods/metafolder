@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 use std::io::{Read, Write};
 
-use gtk::{Application, ApplicationWindow, glib};
+use gtk::{ApplicationWindow, glib};
 use gtk::gdk;
 use gtk::gdk::DragAction;
 use gtk::glib::Type;
 use gtk::prelude::*;
 use serde::{Deserialize, Serialize};
-use crate::appwindow_with_datastore::AppWithDatastore;
 
+use crate::appwindow_with_datastore::AppWithDatastore;
 use crate::menus::make_header_bar;
 
 mod folder;
@@ -45,7 +45,7 @@ fn build_ui(app: &AppWithDatastore) {
     window.maximize();
 
     let provider = gtk::CssProvider::new();
-    let bytes = glib::Bytes::from("window {background-color:rgba(80,80,80,80); border-radius: 7px;}".as_bytes());
+    let bytes = glib::Bytes::from("window {background-color:rgba(80,80,80,255); border-radius: 7px;}".as_bytes());
     provider.load_from_bytes(&bytes);
     gtk::style_context_add_provider_for_display(
         &gdk::Display::default().expect("Could not connect to a display."),

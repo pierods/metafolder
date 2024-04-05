@@ -5,8 +5,8 @@ use std::rc::Rc;
 use gtk::{ApplicationWindow, EventSequenceState, Fixed, glib, WidgetPaintable};
 use gtk::gdk::ContentProvider;
 use gtk::glib::{clone, Value};
-use gtk::glib::property::{PropertyGet, PropertySet};
-use gtk::prelude::{FixedExt, ObjectExt, ToVariant, WidgetExt};
+use gtk::glib::property::PropertyGet;
+use gtk::prelude::{Cast, FixedExt, ObjectExt, ToVariant, WidgetExt};
 use gtk::prelude::GestureExt;
 use gtk::prelude::GtkWindowExt;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
@@ -44,9 +44,15 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
                 let c = desktop_props_rc.clone();
                 let desktop_props = c.borrow();
                 let cell = desktop_props.cell_map.get(csp.path.as_str()).expect("Fatal: cannot find cell");
+                let memo_desktop = make_settings(desktop_props_rc.clone().borrow(), d.borrow().as_ref(), csp.path.as_str(), x, y);
+                if let Some(err) = files::save_settings(memo_desktop)  {
+                    let alert =  gtk::AlertDialog::builder().modal(true).detail(err.to_string()).message("folder settings could not be saved").build();
+                    let root = <Fixed as AsRef<Fixed>>::as_ref(&d.borrow()).root().unwrap();
+                    let app_window: ApplicationWindow = root.downcast().unwrap();
+                    alert.show(Some(&app_window));
+                    return false
+                }
                 d.borrow().move_(cell, x, y);
-                let memo_desktop = make_settings(desktop_props, d.borrow().as_ref(), csp.path.as_str(), x, y);
-                files::save_settings(memo_desktop);
                 true
             }
             Err(err) => {

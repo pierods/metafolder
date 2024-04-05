@@ -1,8 +1,10 @@
-use gtk::{ApplicationWindow, Fixed, PickFlags};
-use gtk::prelude::{Cast, FixedExt, GtkWindowExt, IsA, ObjectExt, WidgetExt};
-use gtk::glib::{Value, Variant};
 use std::error::Error;
+
+use gtk::{ApplicationWindow, Fixed, PickFlags};
+use gtk::glib::{Value, Variant};
 use gtk::graphene::Rect;
+use gtk::prelude::{Cast, FixedExt, GtkWindowExt, IsA, ObjectExt, WidgetExt};
+
 use crate::appwindow_with_datastore::AppWithDatastore;
 use crate::cell::DNDInfo;
 

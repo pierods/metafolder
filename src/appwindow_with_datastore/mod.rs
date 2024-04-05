@@ -1,9 +1,9 @@
-mod imp;
-
 use gtk::{gio, glib};
-use gtk::glib::SignalHandlerId;
 use gtk::prelude::ApplicationExt;
+
 use crate::APP_ID;
+
+mod imp;
 
 glib::wrapper! {
     pub struct AppWithDatastore(ObjectSubclass<imp::AppWithDatastore>)
