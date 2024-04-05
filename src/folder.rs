@@ -43,7 +43,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
                 let c = metafolder_rc.clone();
                 let desktop_props = c.borrow();
                 let cell = desktop_props.cell_map.get(csp.path.as_str()).expect("Fatal: cannot find cell");
-                let memo_desktop = make_settings(metafolder_rc.clone().borrow(), d.borrow().as_ref(), csp.path.as_str(), x, y);
+                let memo_desktop = make_settings(&metafolder_rc.clone().borrow(), d.borrow().as_ref(), csp.path.as_str(), x, y);
                 let data_store = gtk_wrappers::get_application(<gtk::Fixed as AsRef<gtk::Fixed>>::as_ref(&desktop.borrow()));
                 data_store.imp().current_path.replace(String::from(path_rc.clone().borrow().to_string()));
                 if let Some(err) = files::save_settings(path_rc.clone().borrow().to_string(), memo_desktop)  {
@@ -67,12 +67,13 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     data_store.imp().current_path.replace(String::from(path));
 }
 
-fn make_settings(desktop_props: Ref<MetaFolder>, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> MemoFolder {
-    let mut memo_desktop = MemoFolder::default();
+pub(crate) fn make_settings(metafolder: &MetaFolder, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> MemoFolder {
+    let mut memo_folder = MemoFolder::default();
     let mut icons: HashMap<String, MemoIcon> = HashMap::new();
 
-    memo_desktop.background_color = desktop_props.background_color.clone();
-    for (path, gbox) in desktop_props.cell_map.clone() {
+    memo_folder.drilldown = metafolder.drilldown;
+    memo_folder.background_color = metafolder.background_color.clone();
+    for (path, gbox) in metafolder.cell_map.clone() {
         let memo_icon: MemoIcon;
         if path == icon_file_path {
             memo_icon = MemoIcon {
@@ -89,8 +90,8 @@ fn make_settings(desktop_props: Ref<MetaFolder>, desktop: &Fixed, icon_file_path
         }
         icons.insert(path, memo_icon);
     }
-    memo_desktop.icons = icons;
-    memo_desktop
+    memo_folder.icons = icons;
+    memo_folder
 }
 
 fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoFolder) -> HashMap<String, gtk::Box> {

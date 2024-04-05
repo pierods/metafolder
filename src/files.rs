@@ -29,8 +29,8 @@ pub(crate) fn home_path() -> String {
 }
 
 pub(crate) fn get_entries(p: String) -> HashSet<DirItem> {
-    let mut entries: HashSet<DirItem> = HashSet::new();
 
+    let mut entries: HashSet<DirItem> = HashSet::new();
     let paths = fs::read_dir(p).expect("Impossible to get your home dir!");
 
     for path in paths {
@@ -119,8 +119,8 @@ pub struct MemoIcon {
 #[derive(Default, Serialize, Deserialize, Debug)]
 pub struct MemoFolder {
     pub(crate) background_color: String,
-    cell_size: i32,
-    drilldown: bool,
+    pub(crate) cell_size: i32,
+    pub(crate) drilldown: bool,
     pub(crate) icons: HashMap<String, MemoIcon>,
 }
 
@@ -128,7 +128,7 @@ pub struct MemoFolder {
 pub(crate) fn save_settings(path : String, memo_desktop: MemoFolder) -> Option<Error> {
     let serialized = serde_json::to_string_pretty(&memo_desktop).unwrap();
     let mut settings_path = path;
-    settings_path.push_str("/.metafolder");
+    settings_path.push_str(".metafolder");
      match std::fs::OpenOptions::new().write(true).truncate(true).create(true).open(settings_path) {
          Ok(mut f) => {
              f.write_all(serialized.as_bytes()).unwrap();
@@ -142,7 +142,7 @@ pub(crate) fn save_settings(path : String, memo_desktop: MemoFolder) -> Option<E
 }
 
 pub(crate) fn load_settings(mut path: String) -> MemoFolder {
-    path.push_str("/.metafolder");
+    path.push_str(".metafolder");
     if !try_file(path.as_str()) {
         return MemoFolder::default();
     }
@@ -168,6 +168,7 @@ pub fn initial_dir() -> String {
     if try_file((path_name.clone() + "/Desktop").as_str()) {
         path_name += "/Desktop";
     }
+    path_name.push_str("/");
     path_name
 }
 
@@ -183,7 +184,7 @@ pub fn up(path: &String) -> Option<String> {
         Some(ancestor) => {
             match ancestor.to_str() {
                 None => { return None; }
-                Some(parent) => { return Some(String::from(parent)); }
+                Some(parent) => { return Some(String::from(parent).to_owned() + "/"); }
             }
         }
     }

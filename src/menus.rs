@@ -77,6 +77,9 @@ pub(crate) fn make_header_bar() -> HeaderBar {
         let mut  metafolder = ds.imp().desktop.take();
         metafolder.background_color = color;
         ds.imp().desktop.replace(metafolder);
+
+        //let memo_desktop = crate::folder::make_settings(metafolder, d.borrow().as_ref(), csp.path.as_str(), x, y);
+
     });
     bar.pack_start(&background_color);
 

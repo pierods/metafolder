@@ -50,7 +50,7 @@ pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box 
                 let app_window_result = root.downcast::<ApplicationWindow>();
                 match app_window_result {
                     Ok(app_win) => {
-                        folder::draw_folder(current_path + name.as_str(), &app_win);
+                        folder::draw_folder(current_path + name.as_str() + "/", &app_win);
                         return
                     }
                     Err(r) => {println!("{:?} is not an application window", r)}
@@ -73,7 +73,7 @@ fn generate_icon(path : String, dir_item: &files::DirItem, size: i32) -> gtk::Im
 
     if let Some(gicon) = &dir_item.icon {
         if dir_item.mime_type.starts_with("image") {
-            img = gtk::Image::from_file(path);
+            img = gtk::Image::from_file(path.to_owned() + dir_item.name.as_str());
         } else {
             match dir_item.mime_type.as_str() {
                 "application/pdf" => {
