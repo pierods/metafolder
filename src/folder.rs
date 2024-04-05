@@ -1,5 +1,6 @@
 use std::cell::{Ref, RefCell};
 use std::collections::{HashMap, HashSet};
+use std::ops::DerefMut;
 use std::rc::Rc;
 
 use gtk::{ApplicationWindow, EventSequenceState, Fixed, glib, WidgetPaintable};
@@ -14,46 +15,52 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 use crate::{cell, MetaFolder, DRAG_ACTION, DROP_TYPE, files, folder, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
 use crate::cell::DNDInfo;
 use crate::files::{MemoFolder, MemoIcon};
+use crate::gtk_wrappers::set_window_background;
 
 pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
-    let metafolder_rc: Rc<RefCell<MetaFolder>> = Rc::new(RefCell::new(MetaFolder::default()));
-    let c = metafolder_rc.clone();
-    let mut metafolder = c.borrow_mut();
 
     let entries = files::get_entries(path.clone());
 
     let desktop_rc = Rc::new(RefCell::new(gtk::Fixed::new()));
+    let data_store = gtk_wrappers::get_application(window);
+
     let desktop = desktop_rc.clone();
-    metafolder.cell_map = folder::draw_icons(path.clone(), entries, desktop.borrow().as_ref(), INITIAL_DESKTOP_WIDTH, ICON_SIZE, files::load_settings(path.clone()));
+    let memo_folder = files::load_settings(path.clone());
+    set_window_background(memo_folder.background_color.clone());
+    let mut metafolder = MetaFolder::default();
+    metafolder.current_path = path.clone();
+    metafolder.background_color = memo_folder.background_color.clone();
+    metafolder.cell_map = draw_icons(path.clone(), entries, desktop.borrow().as_ref(), INITIAL_DESKTOP_WIDTH, ICON_SIZE, memo_folder);
 
     let scrolled_window = gtk::ScrolledWindow::new();
     scrolled_window.set_child(Option::<&gtk::Fixed>::Some(desktop.borrow().as_ref()));
     window.set_child(Option::Some(&scrolled_window));
 
-    let d = desktop.clone();
+    let desktop_clone = desktop.clone();
     let drop_target = gtk::DropTarget::new(DROP_TYPE, DRAG_ACTION);
     let path_rc = Rc::new(RefCell::new(String::from(&path)));
+
+    let metafolder_rc: Rc<RefCell<MetaFolder>> = Rc::new(RefCell::new(metafolder));
+    let m_c = metafolder_rc.clone();
+
+
     drop_target.connect_drop(move |drop_target, dnd_msg, x, y| {
         let dnd_info_result = gtk_wrappers::extract_from_variant(dnd_msg);
         match dnd_info_result {
             Ok(csp) => {
-                if gtk_wrappers::is_something_underneath(d.borrow().as_ref(), x, y, csp.w, csp.h) {
+                if gtk_wrappers::is_something_underneath(desktop_clone.borrow().as_ref(), x, y, csp.w, csp.h) {
                     return false;
                 }
-                let c = metafolder_rc.clone();
-                let desktop_props = c.borrow();
-                let cell = desktop_props.cell_map.get(csp.path.as_str()).expect("Fatal: cannot find cell");
-                let memo_desktop = make_settings(&metafolder_rc.clone().borrow(), d.borrow().as_ref(), csp.path.as_str(), x, y);
-                let data_store = gtk_wrappers::get_application(<gtk::Fixed as AsRef<gtk::Fixed>>::as_ref(&desktop.borrow()));
-                data_store.imp().current_path.replace(String::from(path_rc.clone().borrow().to_string()));
-                if let Some(err) = files::save_settings(path_rc.clone().borrow().to_string(), memo_desktop)  {
+                let mf = data_store.imp().desktop.borrow();
+                let cell = mf.get_cell(csp.path.clone());
+                if let Some(err) = data_store.imp().desktop.borrow().update_cell_positions(desktop_clone.borrow().as_ref(), csp.path.as_str(), x, y)  {
                     let alert =  gtk::AlertDialog::builder().modal(true).detail(err.to_string()).message("folder settings could not be saved").build();
-                    let root = <Fixed as AsRef<Fixed>>::as_ref(&d.borrow()).root().unwrap();
+                    let root = <Fixed as AsRef<Fixed>>::as_ref(&desktop_clone.borrow()).root().unwrap();
                     let app_window: ApplicationWindow = root.downcast().unwrap();
                     alert.show(Some(&app_window));
                     return false
                 }
-                d.borrow().move_(cell, x, y);
+                desktop_clone.borrow().move_(cell, x, y);
                 true
             }
             Err(err) => {
@@ -63,11 +70,13 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
         }
     });
     desktop_rc.clone().borrow().add_controller(drop_target);
-    let data_store = gtk_wrappers::get_application(<gtk::Fixed as AsRef<gtk::Fixed>>::as_ref(&desktop_rc.clone().borrow()));
-    data_store.imp().current_path.replace(String::from(path));
+
+    let data_store = gtk_wrappers::get_application(<Fixed as AsRef<Fixed>>::as_ref(&desktop_rc.clone().borrow()));
+    data_store.imp().desktop.borrow_mut().build_new(&metafolder_rc.clone().borrow());
 }
 
-pub(crate) fn make_settings(metafolder: &MetaFolder, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> MemoFolder {
+
+fn make_settings(metafolder: &MetaFolder, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> MemoFolder {
     let mut memo_folder = MemoFolder::default();
     let mut icons: HashMap<String, MemoIcon> = HashMap::new();
 

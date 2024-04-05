@@ -158,9 +158,11 @@ pub(crate) fn load_settings(mut path: String) -> MemoFolder {
     let mut serialized = String::new();
     f.read_to_string(&mut serialized).unwrap();
 
-    let memo_desktop: MemoFolder = serde_json::from_str(serialized.as_str()).unwrap();
-
-    memo_desktop
+    let mut  memo_folder: MemoFolder = serde_json::from_str(serialized.as_str()).unwrap();
+    if memo_folder.background_color == "" {
+        memo_folder.background_color = "rgba(80, 80, 80, 255)".to_string();
+    }
+    memo_folder
 }
 
 pub fn initial_dir() -> String {

@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use gtk::{ApplicationWindow, Fixed, PickFlags};
+use gtk::{ApplicationWindow, Fixed, gdk, glib, PickFlags};
 use gtk::glib::{Value, Variant};
 use gtk::graphene::Rect;
 use gtk::prelude::{Cast, FixedExt, GtkWindowExt, IsA, ObjectExt, WidgetExt};
@@ -67,4 +67,35 @@ pub fn get_application(sw : & impl IsA<gtk::Widget>) -> AppWithDatastore {
     let app = app_window.application().unwrap();
     let ds = app.downcast::<AppWithDatastore>().unwrap();
     ds
+}
+
+pub fn get_desktop(sw : & impl IsA<gtk::Widget>) -> Fixed {
+
+    let root = sw.root().unwrap();
+    let app_window= root.downcast::<gtk::ApplicationWindow>().unwrap();
+    let scrolled_window = app_window.child().unwrap();
+    let viewport = scrolled_window.first_child().unwrap();
+    let fixed_widget = viewport.first_child().unwrap();
+    let fixed = fixed_widget.downcast::<gtk::Fixed>().unwrap();
+    fixed
+}
+
+pub fn set_window_background(rgba: String) {
+    let color = String::from("window {background-color:").to_owned() + rgba.as_str() + "; border-radius: 7px;}";
+    let provider = gtk::CssProvider::new();
+    let bytes = glib::Bytes::from(color.as_bytes());
+    provider.load_from_bytes(&bytes);
+    gtk::style_context_add_provider_for_display(
+        &gdk::Display::default().expect("Could not connect to a display."),
+        &provider,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
+}
+
+pub fn alert(sw : & impl IsA<gtk::Widget>, msg: String, err: String) {
+    let alert =  gtk::AlertDialog::builder().modal(true).detail(err).message(msg).build();
+    let root = sw.root().unwrap();
+    let app_window: ApplicationWindow = root.downcast().unwrap();
+    alert.show(Some(&app_window));
+
 }

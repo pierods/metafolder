@@ -8,7 +8,6 @@ use crate::MetaFolder;
 // ObjectSubclass impl.
 pub struct AppWithDatastore {
     pub(crate) desktop :RefCell<MetaFolder>,
-    pub(crate) current_path: RefCell<String>,
 }
 
 #[glib::object_subclass]

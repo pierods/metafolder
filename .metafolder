@@ -1,0 +1,51 @@
+{
+  "background_color": "rgb(119,118,123)",
+  "cell_size": 0,
+  "drilldown": false,
+  "icons": {
+    "Robert Greene - The 48 laws of power.pdf": {
+      "position_x": 480,
+      "position_y": 0
+    },
+    "Piero de Salvia-5.jpg": {
+      "position_x": 400,
+      "position_y": 0
+    },
+    "Piero de Salvia-9.jpg": {
+      "position_x": 720,
+      "position_y": 0
+    },
+    "Piero de Salvia-8_01.jpg": {
+      "position_x": 320,
+      "position_y": 0
+    },
+    "Piero de Salvia-15.jpg": {
+      "position_x": 765,
+      "position_y": 294
+    },
+    "Piero de Salvia-9_01.jpg": {
+      "position_x": 560,
+      "position_y": 0
+    },
+    "vaina.txt": {
+      "position_x": 160,
+      "position_y": 0
+    },
+    "Piero de Salvia-7.jpg": {
+      "position_x": 80,
+      "position_y": 0
+    },
+    "Piero de Salvia-2.jpg": {
+      "position_x": 0,
+      "position_y": 0
+    },
+    "Piero de Salvia-8.jpg": {
+      "position_x": 240,
+      "position_y": 0
+    },
+    "UntitledFolder": {
+      "position_x": 640,
+      "position_y": 0
+    }
+  }
+}

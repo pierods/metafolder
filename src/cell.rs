@@ -6,6 +6,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{files, folder, gtk_wrappers};
 use crate::glib::clone;
+use crate::gtk_wrappers::get_application;
 
 #[derive(Default, Debug, PartialEq, glib::Variant)]
 pub(crate) struct DNDInfo {
@@ -43,8 +44,8 @@ pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box 
     let gesture_click = GestureClick::new();
     gesture_click.connect_pressed(clone!(@weak  desktop_icon => @default-return (), move |_, clicks, _, _| {
         if clicks == 2 {
-            let data_store = gtk_wrappers::get_application(<gtk::Box as AsRef<gtk::Box>>::as_ref(&desktop_icon));
-            let current_path = <std::cell::RefCell<String> as Clone>::clone(&data_store.imp().current_path).into_inner();
+            let data_store = get_application(&desktop_icon);
+            let current_path = data_store.imp().desktop.borrow().get_current_path();
             if dir_item.mime_type == "inode/directory" {
                 let root = desktop_icon.root().unwrap();
                 let app_window_result = root.downcast::<ApplicationWindow>();
