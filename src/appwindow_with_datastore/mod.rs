@@ -1,5 +1,4 @@
 use gtk::{gio, glib};
-use gtk::prelude::ApplicationExt;
 
 use crate::APP_ID;
 

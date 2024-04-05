@@ -7,10 +7,8 @@ use std::path::Path;
 use gtk::gio;
 use gtk::gio::{Cancellable, FileInfo, FileType};
 use gtk::prelude::FileExt;
-use gtk::subclass::prelude::ObjectSubclassIsExt;
 use ignore::Error;
 use serde::{Deserialize, Serialize};
-use crate::gtk_wrappers;
 
 pub(crate) fn try_file(path: &str) -> bool {
     Path::new(path).exists()
@@ -68,10 +66,8 @@ pub struct DirItem {
 
 
 fn get_file_info(path_name: String) -> Option<DirItem> {
+
     let mut dir_item: DirItem = DirItem::default();
-
-    //dir_item.path_name = path_name.clone();
-
     let g_file = gio::File::for_path(path_name.clone());
 
     let g_file_info_result = g_file.query_info("*", gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS, Cancellable::NONE);
@@ -81,7 +77,7 @@ fn get_file_info(path_name: String) -> Option<DirItem> {
             g_file_info = file_info;
         }
         Err(error) => {
-            println!("{}", error);
+            println!("error getting file info: {}", error);
             return Option::None;
         }
     }
@@ -144,14 +140,16 @@ pub(crate) fn save_settings(path : String, memo_desktop: MemoFolder) -> Option<E
 pub(crate) fn load_settings(mut path: String) -> MemoFolder {
     path.push_str(".metafolder");
     if !try_file(path.as_str()) {
-        return MemoFolder::default();
+        let mut mf = MemoFolder::default();
+        mf.background_color = "rgba(80, 80, 80, 255)".to_string();
+        return mf;
     }
     let mut f: fs::File;
-    let f_result = std::fs::OpenOptions::new().read(true).open(path);
+    let f_result = std::fs::OpenOptions::new().read(true).open(path.clone());
     match f_result {
         Ok(file) => { f = file }
         Err(e) => {
-            println!("{}", e);
+            println!("error opening settings file - {}:{}", path, e);
             return MemoFolder::default();
         }
     }

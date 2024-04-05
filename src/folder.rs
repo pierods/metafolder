@@ -1,21 +1,19 @@
-use std::cell::{Ref, RefCell};
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use std::ops::DerefMut;
 use std::rc::Rc;
 
 use gtk::{ApplicationWindow, EventSequenceState, Fixed, glib, WidgetPaintable};
 use gtk::gdk::ContentProvider;
 use gtk::glib::{clone, Value};
-use gtk::glib::property::PropertyGet;
-use gtk::prelude::{Cast, FixedExt, IconExt, ObjectExt, ToVariant, WidgetExt};
+use gtk::prelude::{Cast, FixedExt, ToVariant, WidgetExt};
 use gtk::prelude::GestureExt;
 use gtk::prelude::GtkWindowExt;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
-use crate::{cell, MetaFolder, DRAG_ACTION, DROP_TYPE, files, folder, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
+use crate::{cell, DRAG_ACTION, DROP_TYPE, files, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
 use crate::cell::DNDInfo;
-use crate::files::{MemoFolder, MemoIcon};
 use crate::gtk_wrappers::set_window_background;
+use crate::settings::MetaFolder;
 
 pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
 
@@ -38,13 +36,9 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
 
     let desktop_clone = desktop.clone();
     let drop_target = gtk::DropTarget::new(DROP_TYPE, DRAG_ACTION);
-    let path_rc = Rc::new(RefCell::new(String::from(&path)));
-
     let metafolder_rc: Rc<RefCell<MetaFolder>> = Rc::new(RefCell::new(metafolder));
-    let m_c = metafolder_rc.clone();
 
-
-    drop_target.connect_drop(move |drop_target, dnd_msg, x, y| {
+    drop_target.connect_drop(move |_drop_target, dnd_msg, x, y| {
         let dnd_info_result = gtk_wrappers::extract_from_variant(dnd_msg);
         match dnd_info_result {
             Ok(csp) => {
@@ -64,7 +58,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
                 true
             }
             Err(err) => {
-                println!("err={}", err);
+                println!("error on drop_target.drop: {}", err);
                 false
             }
         }
@@ -73,34 +67,6 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
 
     let data_store = gtk_wrappers::get_application(<Fixed as AsRef<Fixed>>::as_ref(&desktop_rc.clone().borrow()));
     data_store.imp().desktop.borrow_mut().build_new(&metafolder_rc.clone().borrow());
-}
-
-
-fn make_settings(metafolder: &MetaFolder, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> MemoFolder {
-    let mut memo_folder = MemoFolder::default();
-    let mut icons: HashMap<String, MemoIcon> = HashMap::new();
-
-    memo_folder.drilldown = metafolder.drilldown;
-    memo_folder.background_color = metafolder.background_color.clone();
-    for (path, gbox) in metafolder.cell_map.clone() {
-        let memo_icon: MemoIcon;
-        if path == icon_file_path {
-            memo_icon = MemoIcon {
-                position_x: x as i32,
-                position_y: y as i32,
-            };
-        } else {
-            //let bounds = gbox.allocation();
-            let bounds = gtk_wrappers::get_widget_bounds(desktop, &gbox);
-            memo_icon = MemoIcon {
-                position_x: bounds.x() as i32,
-                position_y: bounds.y() as i32,
-            };
-        }
-        icons.insert(path, memo_icon);
-    }
-    memo_folder.icons = icons;
-    memo_folder
 }
 
 fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoFolder) -> HashMap<String, gtk::Box> {
@@ -137,7 +103,7 @@ fn make_drag_source(path_name: String, desktop_icon: &gtk::Box, layout: &Fixed) 
     let path_copy = String::from(path_name.as_str());
     let l_clone = layout.clone();
     drag_source.connect_prepare(
-        clone!(@weak  desktop_icon => @default-return None, move |me, x, y| {
+        clone!(@weak  desktop_icon => @default-return None, move |me, _x, _y| {
             me.set_state(EventSequenceState::Claimed);
             let mut dnd_info  = DNDInfo::default();
             dnd_info.path = path_copy.to_string();

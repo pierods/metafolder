@@ -49,7 +49,6 @@ pub fn get_widget_bounds(container: &Fixed, w: &gtk::Box) -> Rect {
             let bounds = w.compute_bounds(w).expect("Fatal: cannot get cell.compute_bounds");
             let rect = Rect::new(bounds.x(), bounds.y(), bounds.width(), bounds.height());
             let actual_bounds = transform.transform_bounds(&rect);
-            //println!("{:?}", actual_bounds);
             actual_bounds
         }
         None => {
@@ -69,16 +68,16 @@ pub fn get_application(sw : & impl IsA<gtk::Widget>) -> AppWithDatastore {
     ds
 }
 
-pub fn get_desktop(sw : & impl IsA<gtk::Widget>) -> Fixed {
-
-    let root = sw.root().unwrap();
-    let app_window= root.downcast::<gtk::ApplicationWindow>().unwrap();
-    let scrolled_window = app_window.child().unwrap();
-    let viewport = scrolled_window.first_child().unwrap();
-    let fixed_widget = viewport.first_child().unwrap();
-    let fixed = fixed_widget.downcast::<gtk::Fixed>().unwrap();
-    fixed
-}
+// pub fn get_desktop(sw : & impl IsA<gtk::Widget>) -> Fixed {
+//
+//     let root = sw.root().unwrap();
+//     let app_window= root.downcast::<gtk::ApplicationWindow>().unwrap();
+//     let scrolled_window = app_window.child().unwrap();
+//     let viewport = scrolled_window.first_child().unwrap();
+//     let fixed_widget = viewport.first_child().unwrap();
+//     let fixed = fixed_widget.downcast::<gtk::Fixed>().unwrap();
+//     fixed
+// }
 
 pub fn set_window_background(rgba: String) {
     let color = String::from("window {background-color:").to_owned() + rgba.as_str() + "; border-radius: 7px;}";

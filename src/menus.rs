@@ -1,16 +1,13 @@
-use std::fmt::Display;
-use gtk::{ApplicationWindow, ColorDialog, ColorDialogButton, HeaderBar};
+use gtk::{ColorDialog, ColorDialogButton, HeaderBar};
 use gtk::gdk::RGBA;
-use gtk::gio::MenuModel;
 use gtk::glib::Propagation;
-use gtk::prelude::{ButtonExt, Cast, GtkWindowExt, WidgetExt};
+use gtk::prelude::{ButtonExt, Cast, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 use crate::{files, gtk_wrappers};
-use crate::files::save_settings;
 use crate::folder::draw_folder;
-use crate::gtk_wrappers::{alert, get_desktop};
+use crate::gtk_wrappers::{alert};
 
-pub(crate) fn build_menu(menubar: Option<MenuModel>) {}
+//pub(crate) fn build_menu(_menubar: Option<MenuModel>) {}
 
 pub(crate) fn make_header_bar() -> HeaderBar {
     let bar = HeaderBar::new();

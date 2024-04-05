@@ -1,7 +1,8 @@
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 
-use gtk::{glib, prelude::*, subclass::prelude::*};
-use crate::MetaFolder;
+use gtk::{glib, subclass::prelude::*};
+
+use crate::settings::MetaFolder;
 
 #[derive(Debug, Default)]
 // By implementing Default we don't have to provide a `new` fn in our
