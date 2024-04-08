@@ -4,7 +4,7 @@ use gtk::Fixed;
 use ignore::Error;
 
 use crate::{files, gtk_wrappers};
-use crate::files::{load_settings, MemoFolder, MemoIcon};
+use crate::files::{load_settings, MemoIcon};
 
 #[derive(Default, Debug)]
 pub struct MetaFolder {
@@ -18,7 +18,7 @@ pub struct MetaFolder {
 
 impl MetaFolder {
     pub(crate) fn update_cell_positions(&self, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> Option<Error> {
-        let mut memo_folder = MemoFolder::default();
+        let mut memo_folder = load_settings(self.current_path.clone());
         let mut icons: HashMap<String, MemoIcon> = HashMap::new();
 
         for (path, gbox) in &self.cell_map {
@@ -72,6 +72,5 @@ impl MetaFolder {
         let mut memo_folder = load_settings(self.current_path.clone());
         memo_folder.drilldown = self.drilldown;
         files::save_settings(self.current_path.clone(), memo_folder)
-
     }
 }
