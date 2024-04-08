@@ -18,7 +18,6 @@ pub(crate) struct DNDInfo {
 }
 
 pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box {
-
     let name = dir_item.name.clone();
     let img = generate_icon(path, &dir_item, size);
     let g_text = glib::markup_escape_text(name.as_str());
@@ -47,20 +46,26 @@ pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box 
             let data_store = get_application(&desktop_icon);
             let current_path = data_store.imp().desktop.borrow().get_current_path();
             if dir_item.mime_type == "inode/directory" {
-                let root = desktop_icon.root().unwrap();
-                let app_window_result = root.downcast::<ApplicationWindow>();
-                match app_window_result {
-                    Ok(app_win) => {
-                        folder::draw_folder(current_path + name.as_str() + "/", &app_win);
-                        return
+                let app = get_application(&desktop_icon);
+                let drilldown = app.imp().drilldown.borrow().as_ref().unwrap().state();
+                if  drilldown{
+                    let root = desktop_icon.root().unwrap();
+                    let app_window_result = root.downcast::<ApplicationWindow>();
+                    match app_window_result {
+                        Ok(app_win) => {
+                            folder::draw_folder(current_path + name.as_str() + "/", &app_win);
+                            return
+                        }
+                        Err(r) => {
+                            println!("{:?} is not an application window", r);
+                            return
+                        }
                     }
-                    Err(r) => {println!("{:?} is not an application window", r)}
-
                 }
-            }
             match Command::new("xdg-open").args([current_path.clone() + name.as_str()]).output() {
                 Ok(_) => {}
                 Err(error) => { println!("error opening file {} : {}", current_path + name.as_str(), error) }
+            }
             }
         }
     }));
@@ -68,23 +73,23 @@ pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box 
     desktop_icon
 }
 
-fn generate_icon(path: String, dir_item: &files::DirItem, size: i32) -> gtk::Image {
+    fn generate_icon(path: String, dir_item: & files::DirItem, size: i32) -> gtk::Image {
     let img: gtk::Image;
 
-    if let Some(gicon) = &dir_item.icon {
-        if dir_item.mime_type.starts_with("image") {
-            img = gtk::Image::from_file(path.to_owned() + dir_item.name.as_str());
-        } else {
-            match dir_item.mime_type.as_str() {
-                "application/pdf" => {
-                    img = gtk::Image::from_gicon(gicon)
-                }
-                _ => img = gtk::Image::from_gicon(gicon)
-            }
-        }
+    if let Some(gicon) = & dir_item.icon {
+    if dir_item.mime_type.starts_with("image") {
+    img = gtk::Image::from_file(path.to_owned() + dir_item.name.as_str());
     } else {
-        img = gtk::Image::from_icon_name("x-office-document");
+    match dir_item.mime_type.as_str() {
+    "application/pdf" => {
+    img = gtk::Image::from_gicon(gicon)
+    }
+    _ => img = gtk::Image::from_gicon(gicon)
+    }
+    }
+    } else {
+    img = gtk::Image::from_icon_name("x-office-document");
     }
     img.set_pixel_size(size);
     img
-}
+    }
