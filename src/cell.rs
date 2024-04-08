@@ -62,10 +62,10 @@ pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box 
                         }
                     }
                 }
+            }
             match Command::new("xdg-open").args([current_path.clone() + name.as_str()]).output() {
                 Ok(_) => {}
                 Err(error) => { println!("error opening file {} : {}", current_path + name.as_str(), error) }
-            }
             }
         }
     }));
@@ -73,23 +73,23 @@ pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box 
     desktop_icon
 }
 
-    fn generate_icon(path: String, dir_item: & files::DirItem, size: i32) -> gtk::Image {
+fn generate_icon(path: String, dir_item: &files::DirItem, size: i32) -> gtk::Image {
     let img: gtk::Image;
 
-    if let Some(gicon) = & dir_item.icon {
-    if dir_item.mime_type.starts_with("image") {
-    img = gtk::Image::from_file(path.to_owned() + dir_item.name.as_str());
+    if let Some(gicon) = &dir_item.icon {
+        if dir_item.mime_type.starts_with("image") {
+            img = gtk::Image::from_file(path.to_owned() + dir_item.name.as_str());
+        } else {
+            match dir_item.mime_type.as_str() {
+                "application/pdf" => {
+                    img = gtk::Image::from_gicon(gicon)
+                }
+                _ => img = gtk::Image::from_gicon(gicon)
+            }
+        }
     } else {
-    match dir_item.mime_type.as_str() {
-    "application/pdf" => {
-    img = gtk::Image::from_gicon(gicon)
-    }
-    _ => img = gtk::Image::from_gicon(gicon)
-    }
-    }
-    } else {
-    img = gtk::Image::from_icon_name("x-office-document");
+        img = gtk::Image::from_icon_name("x-office-document");
     }
     img.set_pixel_size(size);
     img
-    }
+}
