@@ -1,9 +1,10 @@
-use std::cell::RefCell;
+use std::collections::HashMap;
+
 use gtk::Fixed;
 use ignore::Error;
-use std::collections::HashMap;
-use crate::files::{load_settings, MemoFolder, MemoIcon};
+
 use crate::{files, gtk_wrappers};
+use crate::files::{load_settings, MemoFolder, MemoIcon};
 
 #[derive(Default, Debug)]
 pub struct MetaFolder {

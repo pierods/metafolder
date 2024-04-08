@@ -140,6 +140,7 @@ pub(crate) fn load_settings(mut path: String) -> MemoFolder {
     if !try_file(path.as_str()) {
         let mut mf = MemoFolder::default();
         mf.background_color = "rgba(80, 80, 80, 255)".to_string();
+        mf.drilldown = true;
         return mf;
     }
     let mut f: fs::File;

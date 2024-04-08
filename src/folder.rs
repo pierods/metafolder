@@ -24,10 +24,12 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     let desktop = desktop_rc.clone();
     let memo_folder = files::load_settings(path.clone());
     set_window_background(memo_folder.background_color.clone());
-    set_drilldown_switch_value(window, memo_folder.drilldown);
+
+    let drilldown = memo_folder.drilldown;
     let mut metafolder = MetaFolder::default();
     metafolder.current_path = path.clone();
     metafolder.background_color = memo_folder.background_color.clone();
+    metafolder.drilldown = memo_folder.drilldown;
     metafolder.cell_map = draw_icons(path.clone(), entries, desktop.borrow().as_ref(), INITIAL_DESKTOP_WIDTH, ICON_SIZE, memo_folder);
 
     let scrolled_window = gtk::ScrolledWindow::new();
@@ -67,6 +69,9 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
 
     let data_store = gtk_wrappers::get_application(window);
     data_store.imp().desktop.borrow_mut().build_new(&metafolder_rc.clone().borrow());
+    // must do it after drawing desktop because it will trigger a save settings and go out of sync b/c done before data_store.desktop is set
+    //  (therefore going to the wrong path)
+    set_drilldown_switch_value(window, drilldown);
 }
 
 fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoFolder) -> HashMap<String, gtk::Box> {

@@ -1,16 +1,13 @@
 use gtk::{ApplicationWindow, ColorDialog, ColorDialogButton, GestureClick, HeaderBar, Popover, PositionType};
 use gtk::gdk::RGBA;
-use gtk::glib::{Propagation};
-use glib::clone;
-use gtk::prelude::{AdjustmentExt, ButtonExt, Cast, PopoverExt, RangeExt, ScaleExt, WidgetExt};
+use gtk::glib;
+use gtk::glib::Propagation;
+use gtk::prelude::{ButtonExt, Cast, PopoverExt, RangeExt, ScaleExt, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
+
 use crate::{files, gtk_wrappers};
 use crate::folder::draw_folder;
-use crate::gtk_wrappers::{alert, set_drilldown_switch_value};
-use gtk::glib;
-
-
-//pub(crate) fn build_menu(_menubar: Option<MenuModel>) {}
+use crate::gtk_wrappers::alert;
 
 pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     let bar = HeaderBar::new();
@@ -20,7 +17,7 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
         let ds = gtk_wrappers::get_application(b);
         let current_path = ds.imp().desktop.borrow().get_current_path();
         match files::up(&current_path) {
-            None => {alert(b, "nowhere to go".to_string(), "".to_string());}
+            None => { alert(b, "nowhere to go".to_string(), "".to_string()); }
             Some(up) => {
                 let root = b.root().unwrap();
                 let app_window = root.downcast::<gtk::ApplicationWindow>().unwrap();
@@ -35,15 +32,13 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     drilldown_switch.connect_state_set(|sw, state| {
         let ds = gtk_wrappers::get_application(sw);
         let x = match ds.imp().desktop.borrow_mut().set_drilldown(state) {
-            None => {
-                set_drilldown_switch_value(sw, state);
-                Propagation::Proceed}
+            None => { Propagation::Proceed }
             Some(err) => {
                 alert(sw, "folder settings could not be saved".to_string(), err.to_string());
                 Propagation::Stop
             }
-        }; x
-
+        };
+        x
     });
     bar.pack_start(&drilldown_switch);
 
@@ -98,6 +93,5 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
 
     let ds = gtk_wrappers::get_application(app_window);
     ds.imp().drilldown.replace(Some(drilldown_switch));
-    println!("ciao");
     bar
 }

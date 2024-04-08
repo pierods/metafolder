@@ -1,8 +1,7 @@
 use std::error::Error;
 
-use gtk::{ApplicationWindow, Fixed, gdk, glib, HeaderBar, PickFlags};
+use gtk::{ApplicationWindow, Fixed, gdk, glib, PickFlags};
 use gtk::glib::{Value, Variant};
-use gtk::glib::property::PropertyGet;
 use gtk::graphene::Rect;
 use gtk::prelude::{Cast, FixedExt, GtkWindowExt, IsA, ObjectExt, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
