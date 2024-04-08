@@ -1,11 +1,13 @@
 use std::error::Error;
 
-use gtk::{ApplicationWindow, Fixed, gdk, glib, PickFlags};
+use gtk::{ApplicationWindow, Fixed, gdk, glib, HeaderBar, PickFlags};
 use gtk::glib::{Value, Variant};
+use gtk::glib::property::PropertyGet;
 use gtk::graphene::Rect;
 use gtk::prelude::{Cast, FixedExt, GtkWindowExt, IsA, ObjectExt, WidgetExt};
+use gtk::subclass::prelude::ObjectSubclassIsExt;
 
-use crate::appwindow_with_datastore::AppWithDatastore;
+use crate::app_with_datastore::AppWithDatastore;
 use crate::cell::DNDInfo;
 
 pub fn is_something_underneath(d: &Fixed, x: f64, y: f64, w: f64, h: f64) -> bool {
@@ -59,8 +61,8 @@ pub fn get_widget_bounds(container: &Fixed, w: &gtk::Box) -> Rect {
     }
 }
 
-pub fn get_application(sw: &impl IsA<gtk::Widget>) -> AppWithDatastore {
-    let root = sw.root().unwrap();
+pub fn get_application(w: &impl IsA<gtk::Widget>) -> AppWithDatastore {
+    let root = w.root().unwrap();
     let app_window = root.downcast::<ApplicationWindow>().unwrap();
     let app = app_window.application().unwrap();
     let ds = app.downcast::<AppWithDatastore>().unwrap();
@@ -90,9 +92,17 @@ pub fn set_window_background(rgba: String) {
     );
 }
 
-pub fn alert(sw: &impl IsA<gtk::Widget>, msg: String, err: String) {
+pub fn alert(w: &impl IsA<gtk::Widget>, msg: String, err: String) {
     let alert = gtk::AlertDialog::builder().modal(true).detail(err).message(msg).build();
-    let root = sw.root().unwrap();
+    let root = w.root().unwrap();
     let app_window: ApplicationWindow = root.downcast().unwrap();
     alert.show(Some(&app_window));
+}
+
+pub fn set_drilldown_switch_value(w: &impl IsA<gtk::Widget>, state: bool) {
+    let  app = get_application(w);
+    let binding = app.imp().drilldown.borrow();
+    let dd = binding.as_ref();
+    dd.unwrap().set_state(state);
+    dd.unwrap().set_active(state);
 }

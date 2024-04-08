@@ -4,14 +4,14 @@ use gtk::gdk::DragAction;
 use gtk::glib::Type;
 use gtk::prelude::*;
 
-use crate::appwindow_with_datastore::AppWithDatastore;
+use crate::app_with_datastore::AppWithDatastore;
 use crate::menus::make_header_bar;
 
 mod folder;
 mod files;
 mod cell;
 mod menus;
-mod appwindow_with_datastore;
+mod app_with_datastore;
 mod gtk_wrappers;
 mod settings;
 
@@ -29,7 +29,7 @@ fn main() -> glib::ExitCode {
 
 fn build_ui(app: &AppWithDatastore) {
     let window = ApplicationWindow::builder().application(app).title("metafolder").build();
-    window.set_titlebar(Some(&make_header_bar()));
+    window.set_titlebar(Some(&make_header_bar(&window)));
     window.set_default_size(1024, 768);
     window.maximize();
 

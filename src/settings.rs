@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use gtk::Fixed;
 use ignore::Error;
 use std::collections::HashMap;
@@ -62,5 +63,14 @@ impl MetaFolder {
 
     pub(crate) fn get_current_path(&self) -> String {
         self.current_path.clone()
+    }
+
+    pub(crate) fn set_drilldown(&mut self, status: bool) -> Option<Error> {
+        self.drilldown = status;
+
+        let mut memo_folder = load_settings(self.current_path.clone());
+        memo_folder.drilldown = self.drilldown;
+        files::save_settings(self.current_path.clone(), memo_folder)
+
     }
 }

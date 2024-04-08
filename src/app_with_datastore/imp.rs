@@ -9,6 +9,7 @@ use crate::settings::MetaFolder;
 // ObjectSubclass impl.
 pub struct AppWithDatastore {
     pub(crate) desktop: RefCell<MetaFolder>,
+    pub(crate) drilldown: RefCell<Option<gtk::Switch>>
 }
 
 #[glib::object_subclass]

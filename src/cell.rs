@@ -18,7 +18,7 @@ pub(crate) struct DNDInfo {
 }
 
 pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box {
-    //let path_name = dir_item.path_name.clone();
+
     let name = dir_item.name.clone();
     let img = generate_icon(path, &dir_item, size);
     let g_text = glib::markup_escape_text(name.as_str());

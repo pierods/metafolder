@@ -12,7 +12,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{cell, DRAG_ACTION, DROP_TYPE, files, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
 use crate::cell::DNDInfo;
-use crate::gtk_wrappers::set_window_background;
+use crate::gtk_wrappers::{set_drilldown_switch_value, set_window_background};
 use crate::settings::MetaFolder;
 
 pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
@@ -24,6 +24,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     let desktop = desktop_rc.clone();
     let memo_folder = files::load_settings(path.clone());
     set_window_background(memo_folder.background_color.clone());
+    set_drilldown_switch_value(window, memo_folder.drilldown);
     let mut metafolder = MetaFolder::default();
     metafolder.current_path = path.clone();
     metafolder.background_color = memo_folder.background_color.clone();
@@ -64,7 +65,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     });
     desktop_rc.clone().borrow().add_controller(drop_target);
 
-    let data_store = gtk_wrappers::get_application(<Fixed as AsRef<Fixed>>::as_ref(&desktop_rc.clone().borrow()));
+    let data_store = gtk_wrappers::get_application(window);
     data_store.imp().desktop.borrow_mut().build_new(&metafolder_rc.clone().borrow());
 }
 
