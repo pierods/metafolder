@@ -14,6 +14,7 @@ mod menus;
 mod app_with_datastore;
 mod gtk_wrappers;
 mod settings;
+mod zoom;
 
 const APP_ID: &str = "org.github.pierods.metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
