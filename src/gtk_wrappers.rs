@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use gtk::{ApplicationWindow, Fixed, gdk, glib, PickFlags};
+use gtk::gdk::RGBA;
 use gtk::glib::{Value, Variant};
 use gtk::graphene::Rect;
 use gtk::prelude::{Cast, FixedExt, GtkWindowExt, IsA, ObjectExt, WidgetExt};
@@ -68,16 +69,16 @@ pub fn get_application(w: &impl IsA<gtk::Widget>) -> AppWithDatastore {
     ds
 }
 
-// pub fn get_desktop(sw : & impl IsA<gtk::Widget>) -> Fixed {
-//
-//     let root = sw.root().unwrap();
-//     let app_window= root.downcast::<gtk::ApplicationWindow>().unwrap();
-//     let scrolled_window = app_window.child().unwrap();
-//     let viewport = scrolled_window.first_child().unwrap();
-//     let fixed_widget = viewport.first_child().unwrap();
-//     let fixed = fixed_widget.downcast::<gtk::Fixed>().unwrap();
-//     fixed
-// }
+pub fn get_desktop(sw : & impl IsA<gtk::Widget>) -> Fixed {
+
+    let root = sw.root().unwrap();
+    let app_window= root.downcast::<gtk::ApplicationWindow>().unwrap();
+    let scrolled_window = app_window.child().unwrap();
+    let viewport = scrolled_window.first_child().unwrap();
+    let fixed_widget = viewport.first_child().unwrap();
+    let fixed = fixed_widget.downcast::<gtk::Fixed>().unwrap();
+    fixed
+}
 
 pub fn set_window_background(rgba: String) {
     let color = String::from("window {background-color:").to_owned() + rgba.as_str() + "; border-radius: 7px;}";
@@ -104,4 +105,11 @@ pub fn set_drilldown_switch_value(w: &impl IsA<gtk::Widget>, state: bool) {
     let dd = binding.as_ref();
     dd.unwrap().set_state(state);
     dd.unwrap().set_active(state);
+}
+
+pub fn set_bgcolor_button_color(w: &impl IsA<gtk::Widget>, color: String) {
+    let  app = get_application(w);
+    let binding = app.imp().bg_color.borrow();
+    let bg = binding.as_ref();
+    bg.unwrap().set_rgba(&RGBA::parse(color).unwrap());
 }

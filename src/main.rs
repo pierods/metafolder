@@ -21,7 +21,7 @@ const DRAG_ACTION: DragAction = DragAction::MOVE;
 const ICON_SIZE: i32 = 60;
 const INITIAL_DESKTOP_WIDTH: i32 = 1024;
 const DROP_TYPE: Type = Type::VARIANT;
-
+const DEFAULT_BG_COLOR : &str = "rgba(170, 170, 170, 1)";
 fn main() -> glib::ExitCode {
     let app = AppWithDatastore::default();
     app.connect_activate(build_ui);
@@ -35,7 +35,7 @@ fn build_ui(app: &AppWithDatastore) {
     window.maximize();
 
     let provider = gtk::CssProvider::new();
-    let bytes = glib::Bytes::from("window {background-color:rgba(80,80,80,255); border-radius: 7px;}".as_bytes());
+    let bytes = glib::Bytes::from(String::from(("window {background-color:").to_owned() + DEFAULT_BG_COLOR + "; border-radius: 7px;}").as_bytes());
     provider.load_from_bytes(&bytes);
     gtk::style_context_add_provider_for_display(
         &gdk::Display::default().expect("Could not connect to a display."),

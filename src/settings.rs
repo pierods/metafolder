@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
 use gtk::Fixed;
+use gtk::prelude::{FixedExt, IsA};
 use ignore::Error;
 
 use crate::{files, gtk_wrappers};
 use crate::files::{load_settings, MemoIcon};
+use crate::gtk_wrappers::{get_desktop, get_widget_bounds};
 
 #[derive(Default, Debug)]
 pub struct MetaFolder {
@@ -13,11 +15,34 @@ pub struct MetaFolder {
     pub(crate) drilldown: bool,
     pub(crate) cell_map: HashMap<String, gtk::Box>,
     pub(crate) current_path: String,
+    pub(crate) zoom: bool,
+    pub(crate) zoomx: i32,
+    pub(crate) zoomy: i32,
 }
 
 
 impl MetaFolder {
-    pub(crate) fn update_cell_positions(&self, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> Option<Error> {
+    pub(crate) fn zoom(& mut self, zoomx : i32, zoomy : i32, w : & impl IsA<gtk::Widget>) {
+        if self.zoomx == zoomx && self.zoomy == zoomy {
+            return;
+        }
+        self.zoom = true;
+        self.zoomx = zoomx;
+        self.zoomy = zoomy;
+
+        let zxf = (zoomx as f32)/100f32;
+        let zyf = (zoomy as f32)/100f32;
+        let desktop = get_desktop(w);
+
+        for (_, gbox) in &self.cell_map {
+            let current_pos = get_widget_bounds(&desktop, gbox);
+            let new_x = current_pos.x() * zxf;
+            let new_y = current_pos.y() * zyf;
+            desktop.move_(gbox, new_x as f64, new_y as f64)
+        }
+    }
+
+    pub(crate) fn arrange_cells(&self, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> Option<Error> {
         let mut memo_folder = load_settings(self.current_path.clone());
         let mut icons: HashMap<String, MemoIcon> = HashMap::new();
 

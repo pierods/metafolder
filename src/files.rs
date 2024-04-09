@@ -9,6 +9,7 @@ use gtk::gio::{Cancellable, FileInfo, FileType};
 use gtk::prelude::FileExt;
 use ignore::Error;
 use serde::{Deserialize, Serialize};
+use crate::DEFAULT_BG_COLOR;
 
 pub(crate) fn try_file(path: &str) -> bool {
     Path::new(path).exists()
@@ -139,7 +140,7 @@ pub(crate) fn load_settings(mut path: String) -> MemoFolder {
     path.push_str(".metafolder");
     if !try_file(path.as_str()) {
         let mut mf = MemoFolder::default();
-        mf.background_color = "rgba(80, 80, 80, 255)".to_string();
+        mf.background_color = DEFAULT_BG_COLOR.to_string();
         mf.drilldown = true;
         return mf;
     }

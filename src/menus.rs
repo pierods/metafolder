@@ -7,7 +7,7 @@ use gtk::glib::Propagation;
 use gtk::prelude::{ButtonExt, Cast, PopoverExt, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
-use crate::{files, gtk_wrappers, zoom};
+use crate::{DEFAULT_BG_COLOR, files, gtk_wrappers, zoom};
 use crate::folder::draw_folder;
 use crate::gtk_wrappers::alert;
 
@@ -61,12 +61,9 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
         popover.set_visible(true);
     });
 
-    let commit = gtk::Button::builder().label("commit").build();
-    bar.pack_start(&commit);
-
     let background_dialog = ColorDialog::builder().modal(true).title("Pick a background color").with_alpha(true).build();
-    let background_color = ColorDialogButton::builder().rgba(&RGBA::new(150f32, 150f32, 150f32, 255f32)).dialog(&background_dialog).build();
-    background_color.connect_rgba_notify(|cdb| {
+    let background_color_button = ColorDialogButton::builder().rgba(&RGBA::parse(DEFAULT_BG_COLOR).unwrap()).dialog(&background_dialog).build();
+    background_color_button.connect_rgba_notify(|cdb| {
         let ds = gtk_wrappers::get_application(cdb);
         match ds.imp().desktop.borrow_mut().update_background_color(cdb.rgba().to_string()) {
             None => { gtk_wrappers::set_window_background(cdb.rgba().to_string()); }
@@ -75,13 +72,15 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
             }
         };
     });
-    bar.pack_start(&background_color);
+
+    bar.pack_start(&background_color_button);
 
     let text_color_dialog = ColorDialog::builder().modal(true).title("Pick a text color").with_alpha(true).build();
-    let text_color = ColorDialogButton::builder().rgba(&RGBA::new(255f32, 255f32, 255f32, 255f32)).dialog(&text_color_dialog).build();
+    let text_color = ColorDialogButton::builder().rgba(&RGBA::parse(DEFAULT_BG_COLOR).unwrap()).dialog(&text_color_dialog).build();
     bar.pack_start(&text_color);
 
     let ds = gtk_wrappers::get_application(app_window);
     ds.imp().drilldown.replace(Some(drilldown_switch));
+    ds.imp().bg_color.replace(Some(background_color_button));
     bar
 }

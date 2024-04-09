@@ -12,7 +12,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{cell, DRAG_ACTION, DROP_TYPE, files, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
 use crate::cell::DNDInfo;
-use crate::gtk_wrappers::{set_drilldown_switch_value, set_window_background};
+use crate::gtk_wrappers::{set_bgcolor_button_color, set_drilldown_switch_value, set_window_background};
 use crate::settings::MetaFolder;
 
 pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
@@ -26,6 +26,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     set_window_background(memo_folder.background_color.clone());
 
     let drilldown = memo_folder.drilldown;
+    let bg_color = memo_folder.background_color.clone();
     let mut metafolder = MetaFolder::default();
     metafolder.current_path = path.clone();
     metafolder.background_color = memo_folder.background_color.clone();
@@ -49,7 +50,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
                 }
                 let mf = data_store.imp().desktop.borrow();
                 let cell = mf.get_cell(csp.path.clone());
-                if let Some(err) = data_store.imp().desktop.borrow().update_cell_positions(desktop_clone.borrow().as_ref(), csp.path.as_str(), x, y) {
+                if let Some(err) = data_store.imp().desktop.borrow().arrange_cells(desktop_clone.borrow().as_ref(), csp.path.as_str(), x, y) {
                     let alert = gtk::AlertDialog::builder().modal(true).detail(err.to_string()).message("folder settings could not be saved").build();
                     let root = <Fixed as AsRef<Fixed>>::as_ref(&desktop_clone.borrow()).root().unwrap();
                     let app_window: ApplicationWindow = root.downcast().unwrap();
@@ -72,6 +73,8 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     // must do it after drawing desktop because it will trigger a save settings and go out of sync b/c done before data_store.desktop is set
     //  (therefore going to the wrong path)
     set_drilldown_switch_value(window, drilldown);
+    set_bgcolor_button_color(window, bg_color);
+
 }
 
 fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoFolder) -> HashMap<String, gtk::Box> {
