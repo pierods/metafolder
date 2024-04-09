@@ -48,9 +48,22 @@ pub(crate) fn make_zoom() -> Popover {
     popover.set_child(Some(&grid));
 
     let commit = gtk::Button::builder().label("commit").build();
+    commit.connect_clicked(clone!(@weak popover, @weak zoomx, @weak zoomy =>  move|_b| {
+        let ds = gtk_wrappers::get_application(&popover);
+        ds.imp().desktop.borrow_mut().commit_zoom(&popover);
+        zoomx.set_value(100f64);
+        zoomy.set_value(100f64);
+    }));
     grid.put(&commit, 0f64, 0f64);
 
     let zero = gtk::Button::builder().label("zero").build();
+    zero.connect_clicked(clone!(@weak popover, @weak zoomx, @weak zoomy => move |_b| {
+        let ds = gtk_wrappers::get_application(&popover);
+        ds.imp().desktop.borrow_mut().reset_zoom(&popover);
+        zoomx.set_value(100f64);
+        zoomy.set_value(100f64);
+    }));
+
     grid.put(&zero, 100f64, 0f64);
 
     let gesture_click_y = GestureClick::new();
