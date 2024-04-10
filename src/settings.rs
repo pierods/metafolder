@@ -50,7 +50,7 @@ impl MetaFolder {
         self.zoomy = zoomy;
     }
 
-    pub fn commit_zoom(&mut self, w : & impl IsA<gtk::Widget>) {
+    pub fn commit_zoom(&mut self, _w : & impl IsA<gtk::Widget>) {
         self.zoom = false;
         self.zoomx = 0;
         self.zoomy = 0;

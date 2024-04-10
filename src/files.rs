@@ -116,6 +116,9 @@ pub struct MemoFolder {
     pub(crate) background_color: String,
     pub(crate) cell_size: i32,
     pub(crate) drilldown: bool,
+    pub(crate) zoom: bool,
+    pub(crate) zoom_x: i32,
+    pub(crate) zoom_y: i32,
     pub(crate) icons: HashMap<String, MemoIcon>,
 }
 

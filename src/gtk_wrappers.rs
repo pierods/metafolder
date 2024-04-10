@@ -10,21 +10,24 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 use crate::app_with_datastore::AppWithDatastore;
 use crate::cell::DNDInfo;
 
-pub fn is_something_underneath(d: &Fixed, x: f64, y: f64, w: f64, h: f64) -> bool {
+pub fn is_something_underneath(name: String, d: &Fixed, x: f64, y: f64, w: f64, h: f64) -> bool {
     struct Point {
         x: f64,
         y: f64,
     }
     let points: [Point; 4] = [Point { x, y }, Point { x: x + w, y }, Point { x, y: y + h }, Point { x: x + w, y: y + h }];
     for p in points {
-        let widget_opt = d.pick(p.x, p.y, PickFlags::DEFAULT);
-        match widget_opt {
+        match d.pick(p.x, p.y, PickFlags::DEFAULT) {
             None => {
-                panic!();
+                println!("Unexpect: desktop.pick == None")
             }
             Some(underlying_icon) => {
                 let widget_type = underlying_icon.type_().to_string();
                 if widget_type != "GtkFixed" {
+                    let img_name = underlying_icon.tooltip_text().unwrap();
+                    if name == img_name {
+                        return false
+                    }
                     return true;
                 }
             }
