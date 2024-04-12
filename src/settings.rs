@@ -27,19 +27,20 @@ impl MetaFolder {
         set_zoom_widgets(w, true, zoom_x, zoom_y);
     }
 
-    pub(crate) fn zoom_and_save_settings(&mut self, zoomx: i32, zoomy: i32, w: &impl IsA<gtk::Widget>) {
+    pub(crate) fn zoom_and_save_settings(&mut self, zoomx: i32, zoomy: i32, w: &impl IsA<gtk::Widget>) -> Option<Error> {
         //don't save settings on a false movement
         if self.zoom(zoomx, zoomy, w) {
-            self.save_zoom_setttings(true, zoomx, zoomy);
+            self.save_zoom_settings(true, zoomx, zoomy);
         }
+        None
     }
 
-    fn save_zoom_setttings(&self, zoom: bool, zoomx: i32, zoomy: i32) {
+    fn save_zoom_settings(&self, zoom: bool, zoomx: i32, zoomy: i32) -> Option<Error> {
         let mut memo_folder = load_settings(self.current_path.clone());
         memo_folder.zoom = zoom;
         memo_folder.zoom_x = zoomx;
         memo_folder.zoom_y = zoomy;
-        files::save_settings(self.current_path.clone(), memo_folder);
+        files::save_settings(self.current_path.clone(), memo_folder)
     }
 
     pub(crate) fn move_to_zoomed(&self, zoomx: i32, zoomy: i32, w: &impl IsA<gtk::Widget>) {
@@ -82,7 +83,7 @@ impl MetaFolder {
         true
     }
 
-    pub fn zoom_commit_and_save_settings(&mut self, w: &impl IsA<gtk::Widget>) {
+    pub fn zoom_commit_and_save_settings(&mut self, w: &impl IsA<gtk::Widget>) -> Option<Error> {
         self.zoom = false;
         self.zoom_x = 0;
         self.zoom_y = 0;
@@ -104,8 +105,8 @@ impl MetaFolder {
         memo_folder.zoom_y = self.zoom_y;
         memo_folder.icons = icons;
 
-        files::save_settings(self.current_path.clone(), memo_folder);
         set_zoom_widgets(w, false, 100, 100);
+        files::save_settings(self.current_path.clone(), memo_folder)
     }
 
     pub fn unzoom(&mut self, w: &impl IsA<gtk::Widget>) {
@@ -126,9 +127,9 @@ impl MetaFolder {
         self.zoom_y = 0;
         set_zoom_widgets(w, false, 100, 100);
     }
-    pub fn unzoom_and_save_settings(&mut self, w: &impl IsA<gtk::Widget>) {
+    pub fn unzoom_and_save_settings(&mut self, w: &impl IsA<gtk::Widget>) -> Option<Error> {
         self.unzoom(w);
-        self.save_zoom_setttings(false, 0, 0);
+        self.save_zoom_settings(false, 0, 0)
     }
     pub(crate) fn arrange_cells_and_save_settings(&self, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> Option<Error> {
         let mut memo_folder = load_settings(self.current_path.clone());
