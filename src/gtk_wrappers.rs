@@ -126,19 +126,17 @@ pub fn set_zoom_widgets(w: &impl IsA<gtk::Widget>, zoom: bool, zoom_x: i32, zoom
         zoom_button.set_css_classes(&["folder_zoomed"]);
         zoom_button.set_child(Some(folder_icon));
 
-        let binding_zoom_x_scale = app.imp().zoom_x.borrow();
-        let zoom_x_scale_opt = binding_zoom_x_scale.as_ref();
-        let zoom_x_scale = zoom_x_scale_opt.unwrap();
-        zoom_x_scale.set_value(zoom_x as f64);
-
-        let binding_zoom_y_scale = app.imp().zoom_y.borrow();
-        let zoom_y_scale_opt = binding_zoom_y_scale.as_ref();
-        let zoom_y_scale = zoom_y_scale_opt.unwrap();
-        zoom_y_scale.set_value(zoom_y as f64);
-
-        return
     } else {
         zoom_button.remove_css_class("folder_zoomed");
         zoom_button.set_child(Some(&gtk::Image::builder().icon_name("folder").build()));
     }
+    let binding_zoom_x_scale = app.imp().zoom_x.borrow();
+    let zoom_x_scale_opt = binding_zoom_x_scale.as_ref();
+    let zoom_x_scale = zoom_x_scale_opt.unwrap();
+    zoom_x_scale.set_value(zoom_x as f64);
+
+    let binding_zoom_y_scale = app.imp().zoom_y.borrow();
+    let zoom_y_scale_opt = binding_zoom_y_scale.as_ref();
+    let zoom_y_scale = zoom_y_scale_opt.unwrap();
+    zoom_y_scale.set_value(zoom_y as f64);
 }

@@ -58,7 +58,6 @@ pub(crate) fn make_zoom() -> (Popover, Scale, Scale) {
         let ds = gtk_wrappers::get_application(&popover);
         ds.imp().desktop.borrow_mut().unzoom_and_save_settings(&popover);
     }));
-
     grid.put(&zero, 100f64, 0f64);
 
     let gesture_click_y = GestureClick::new();
