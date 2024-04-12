@@ -23,12 +23,15 @@ pub struct MetaFolder {
 
 impl MetaFolder {
     pub(crate) fn zoom_and_set_zoom_widgets(&mut self, zoom_x: i32, zoom_y: i32, w: &impl IsA<gtk::Widget>) {
-        self.zoom(zoom_x, zoom_y, w);
+        self.move_to_zoomed(zoom_x, zoom_y, w);
         set_zoom_widgets(w, true, zoom_x, zoom_y);
     }
+
     pub(crate) fn zoom_and_save_settings(&mut self, zoomx: i32, zoomy: i32, w: &impl IsA<gtk::Widget>) {
-        self.zoom(zoomx, zoomy, w);
-        self.save_zoom_setttings(true, zoomx, zoomy);
+        //don't save settings on a false movement
+        if self.zoom(zoomx, zoomy, w) {
+            self.save_zoom_setttings(true, zoomx, zoomy);
+        }
     }
 
     fn save_zoom_setttings(&self, zoom: bool, zoomx: i32, zoomy: i32) {
@@ -39,10 +42,21 @@ impl MetaFolder {
         files::save_settings(self.current_path.clone(), memo_folder);
     }
 
-    pub(crate) fn zoom(&mut self, zoomx: i32, zoomy: i32, w: &impl IsA<gtk::Widget>) {
+    pub(crate) fn move_to_zoomed(&self, zoomx: i32, zoomy: i32, w: &impl IsA<gtk::Widget>) {
+        let desktop = get_desktop(w);
+
+        for (_, gbox) in &self.cell_map {
+            let current_pos = get_widget_bounds(&desktop, gbox);
+            let new_x = current_pos.x() * (zoomx as f32 / 100f32);
+            let new_y = current_pos.y() * (zoomy as f32 / 100f32);
+            desktop.move_(gbox, new_x as f64, new_y as f64)
+        }
+    }
+    pub(crate) fn zoom(&mut self, zoomx: i32, zoomy: i32, w: &impl IsA<gtk::Widget>) -> bool {
         if self.zoom_x == zoomx && self.zoom_y == zoomy {
             println!("equal");
-            return;
+            //don't save settings on a false movement
+            return false;
         }
         self.zoom = true;
 
@@ -65,6 +79,7 @@ impl MetaFolder {
 
         self.zoom_x = zoomx;
         self.zoom_y = zoomy;
+        true
     }
 
     pub fn zoom_commit_and_save_settings(&mut self, w: &impl IsA<gtk::Widget>) {
@@ -90,7 +105,7 @@ impl MetaFolder {
         memo_folder.icons = icons;
 
         files::save_settings(self.current_path.clone(), memo_folder);
-        set_zoom_widgets(w, false, 0, 0);
+        set_zoom_widgets(w, false, 100, 100);
     }
 
     pub fn unzoom(&mut self, w: &impl IsA<gtk::Widget>) {
@@ -109,6 +124,7 @@ impl MetaFolder {
         }
         self.zoom_x = 0;
         self.zoom_y = 0;
+        set_zoom_widgets(w, false, 100, 100);
     }
     pub fn unzoom_and_save_settings(&mut self, w: &impl IsA<gtk::Widget>) {
         self.unzoom(w);

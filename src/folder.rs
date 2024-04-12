@@ -8,7 +8,7 @@ use gtk::prelude::GtkWindowExt;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{cell, DRAG_ACTION, DROP_TYPE, files, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
-use crate::gtk_wrappers::{set_bgcolor_button_color, set_drilldown_switch_value, set_window_background};
+use crate::gtk_wrappers::{set_bgcolor_button_color, set_drilldown_switch_value, set_window_background, set_zoom_widgets};
 use crate::settings::MetaFolder;
 
 pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
@@ -48,10 +48,10 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
             Ok(dnd_info) => {
                 let mf = data_store.imp().desktop.borrow();
                 let cell = mf.get_cell(dnd_info.name.clone());
-                if gtk_wrappers::is_something_underneath(dnd_info.name.clone(), desktop_clone.borrow().as_ref(), x-dnd_info.grabbed_x, y-dnd_info.grabbed_y, dnd_info.w, dnd_info.h) {
+                if gtk_wrappers::is_something_underneath(dnd_info.name.clone(), desktop_clone.borrow().as_ref(), x - dnd_info.grabbed_x, y - dnd_info.grabbed_y, dnd_info.w, dnd_info.h) {
                     return false;
                 }
-                if let Some(err) = data_store.imp().desktop.borrow().arrange_cells_and_save_settings(desktop_clone.borrow().as_ref(), dnd_info.name.as_str(), x, y) {
+                if let Some(err) = data_store.imp().desktop.borrow().arrange_cells_and_save_settings(desktop_clone.borrow().as_ref(), dnd_info.name.as_str(), x - dnd_info.grabbed_x, y - dnd_info.grabbed_y) {
                     let alert = gtk::AlertDialog::builder().modal(true).detail(err.to_string()).message("folder settings could not be saved").build();
                     let root = <Fixed as AsRef<Fixed>>::as_ref(&desktop_clone.borrow()).root().unwrap();
                     let app_window: ApplicationWindow = root.downcast().unwrap();
@@ -79,6 +79,8 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     if zoom {
         let ds = gtk_wrappers::get_application(window);
         ds.imp().desktop.borrow_mut().zoom_and_set_zoom_widgets(zoom_x, zoom_y, window);
+    } else {
+        set_zoom_widgets(window, false, 100, 100);
     }
 }
 
