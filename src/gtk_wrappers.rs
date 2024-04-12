@@ -1,5 +1,5 @@
 use std::error::Error;
-
+use gtk::prelude::{ButtonExt, RangeExt};
 use gtk::{ApplicationWindow, Fixed, gdk, glib, PickFlags};
 use gtk::gdk::RGBA;
 use gtk::glib::{Value, Variant};
@@ -26,7 +26,7 @@ pub fn is_something_underneath(name: String, d: &Fixed, x: f64, y: f64, w: f64, 
                 if widget_type != "GtkFixed" {
                     let img_name = underlying_icon.tooltip_text().unwrap();
                     if name == img_name {
-                        return false
+                        return false;
                     }
                     return true;
                 }
@@ -72,10 +72,9 @@ pub fn get_application(w: &impl IsA<gtk::Widget>) -> AppWithDatastore {
     ds
 }
 
-pub fn get_desktop(sw : & impl IsA<gtk::Widget>) -> Fixed {
-
+pub fn get_desktop(sw: &impl IsA<gtk::Widget>) -> Fixed {
     let root = sw.root().unwrap();
-    let app_window= root.downcast::<gtk::ApplicationWindow>().unwrap();
+    let app_window = root.downcast::<gtk::ApplicationWindow>().unwrap();
     let scrolled_window = app_window.child().unwrap();
     let viewport = scrolled_window.first_child().unwrap();
     let fixed_widget = viewport.first_child().unwrap();
@@ -103,7 +102,7 @@ pub fn alert(w: &impl IsA<gtk::Widget>, msg: String, err: String) {
 }
 
 pub fn set_drilldown_switch_value(w: &impl IsA<gtk::Widget>, state: bool) {
-    let  app = get_application(w);
+    let app = get_application(w);
     let binding = app.imp().drilldown.borrow();
     let dd = binding.as_ref();
     dd.unwrap().set_state(state);
@@ -111,8 +110,35 @@ pub fn set_drilldown_switch_value(w: &impl IsA<gtk::Widget>, state: bool) {
 }
 
 pub fn set_bgcolor_button_color(w: &impl IsA<gtk::Widget>, color: String) {
-    let  app = get_application(w);
+    let app = get_application(w);
     let binding = app.imp().bg_color.borrow();
     let bg = binding.as_ref();
     bg.unwrap().set_rgba(&RGBA::parse(color).unwrap());
+}
+
+pub fn set_zoom_widgets(w: &impl IsA<gtk::Widget>, zoom: bool, zoom_x: i32, zoom_y: i32) {
+    let app = get_application(w);
+    let binding_zoom_button = app.imp().zoom_button.borrow();
+    let zoom_button_opt = binding_zoom_button.as_ref();
+    let zoom_button = zoom_button_opt.unwrap();
+    if zoom {
+        let folder_icon = &gtk::Image::builder().icon_name("folder").css_classes(["folder_zoomed"]).build();
+        zoom_button.set_css_classes(&["folder_zoomed"]);
+        zoom_button.set_child(Some(folder_icon));
+
+        let binding_zoom_x_scale = app.imp().zoom_x.borrow();
+        let zoom_x_scale_opt = binding_zoom_x_scale.as_ref();
+        let zoom_x_scale = zoom_x_scale_opt.unwrap();
+        zoom_x_scale.set_value(zoom_x as f64);
+
+        let binding_zoom_y_scale = app.imp().zoom_y.borrow();
+        let zoom_y_scale_opt = binding_zoom_y_scale.as_ref();
+        let zoom_y_scale = zoom_y_scale_opt.unwrap();
+        zoom_y_scale.set_value(zoom_y as f64);
+
+        return
+    } else {
+        zoom_button.remove_css_class("folder_zoomed");
+        zoom_button.set_child(Some(&gtk::Image::builder().icon_name("folder").build()));
+    }
 }

@@ -11,7 +11,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{DRAG_ACTION, files, folder, gtk_wrappers};
 use crate::glib::clone;
-use crate::gtk_wrappers::get_application;
+use crate::gtk_wrappers::{alert, get_application};
 
 #[derive(Default, Debug, PartialEq, glib::Variant)]
 pub(crate) struct DNDInfo {
@@ -111,6 +111,12 @@ pub(crate) fn make_drag_source(name: String, desktop_icon: &gtk::Box, layout: &F
     let l_clone = layout.clone();
     drag_source.connect_prepare(
         clone!(@weak  desktop_icon => @default-return None, move |me, x, y| {
+            let ds = gtk_wrappers::get_application(&desktop_icon);
+            if ds.imp().desktop.borrow_mut().zoom {
+                me.drag_cancel();
+                alert(&desktop_icon, "Cannot move".to_string(), "Desktop is zoomed - either unzoom or commit to move".to_string());
+                return None
+            }
             me.set_state(EventSequenceState::Claimed);
             let mut dnd_info  = DNDInfo::default();
             dnd_info.name = name_copy.to_string();

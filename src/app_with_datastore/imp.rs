@@ -11,6 +11,9 @@ pub struct AppWithDatastore {
     pub(crate) desktop: RefCell<MetaFolder>,
     pub(crate) drilldown: RefCell<Option<gtk::Switch>>,
     pub(crate) bg_color: RefCell<Option<gtk::ColorDialogButton>>,
+    pub(crate) zoom_button: RefCell<Option<gtk::Button>>,
+    pub(crate) zoom_x: RefCell<Option<gtk::Scale>>,
+    pub(crate) zoom_y: RefCell<Option<gtk::Scale>>,
 }
 
 #[glib::object_subclass]

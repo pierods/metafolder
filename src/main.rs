@@ -35,7 +35,7 @@ fn build_ui(app: &AppWithDatastore) {
     window.maximize();
 
     let provider = gtk::CssProvider::new();
-    let bytes = glib::Bytes::from(String::from(("window {background-color:").to_owned() + DEFAULT_BG_COLOR + "; border-radius: 7px;}").as_bytes());
+    let bytes = glib::Bytes::from(String::from(("window {background-color:").to_owned() + DEFAULT_BG_COLOR + "; border-radius: 7px;} .folder_zoomed {background-image: none; background-color: rgba(245, 241, 39, 0.8);}").as_bytes());
     provider.load_from_bytes(&bytes);
     gtk::style_context_add_provider_for_display(
         &gdk::Display::default().expect("Could not connect to a display."),
