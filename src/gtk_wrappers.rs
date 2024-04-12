@@ -15,7 +15,7 @@ pub fn is_something_underneath(name: String, d: &Fixed, x: f64, y: f64, w: f64, 
         x: f64,
         y: f64,
     }
-    let points: [Point; 4] = [Point { x, y }, Point { x: x + w, y }, Point { x, y: y + h }, Point { x: x + w, y: y + h }];
+    let points: [Point; 5] = [Point { x, y }, Point { x: x + w, y }, Point { x, y: y + h }, Point { x: x + w, y: y + h }, Point{x: x + w/2f64, y: y+ h/2f64}];
     for p in points {
         match d.pick(p.x, p.y, PickFlags::DEFAULT) {
             None => {

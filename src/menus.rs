@@ -46,7 +46,6 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
             zoom_button.remove_css_class("folder_zoomed");
             zoom_button.set_child(Some(&gtk::Image::builder().icon_name("folder").build()));
         }
-
     }));
 
     zoom_button.connect_clicked(move |b| {
