@@ -1,10 +1,10 @@
-use gtk::{Button, glib, Switch};
+use gtk::{Align, Button, glib, Label, Orientation, Switch};
 use crate::glib::clone;
 use gtk::{ApplicationWindow, ColorDialog, ColorDialogButton, HeaderBar};
 use gtk::gdk::RGBA;
 use gtk::glib::Propagation;
 
-use gtk::prelude::{ButtonExt, Cast, PopoverExt, WidgetExt};
+use gtk::prelude::{BoxExt, ButtonExt, Cast, PopoverExt, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{DEFAULT_BG_COLOR, files, gtk_wrappers, zoom};
@@ -65,7 +65,16 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     let text_color = ColorDialogButton::builder().rgba(&RGBA::parse(DEFAULT_BG_COLOR).unwrap()).dialog(&text_color_dialog).build();
     bar.pack_start(&text_color);
 
+    let app_name_pango = String::from("<span font_weight=\"bold\">metafolder</span>");
+    let app_name_label = Label::new(Some(app_name_pango.as_str()));
+    let path_label = Label::new(Some(""));
+    let title_widget = gtk::Box::builder().orientation(Orientation::Vertical).valign(Align::Center).build();
+    title_widget.append(&app_name_label);
+    title_widget.append(&path_label);
+    bar.set_title_widget(Some(&title_widget));
+
     let ds = gtk_wrappers::get_application(app_window);
+    ds.imp().path.replace(Some(path_label));
     ds.imp().drilldown.replace(Some(drilldown_switch));
     ds.imp().bg_color.replace(Some(background_color_button));
     ds.imp().zoom_button.replace(Some(zoom_button));

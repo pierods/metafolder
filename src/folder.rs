@@ -1,3 +1,4 @@
+use crate::gtk_wrappers::set_path;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -82,6 +83,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     } else {
         set_zoom_widgets(window, false, 100, 100);
     }
+    set_path(window, path);
 }
 
 fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoFolder) -> HashMap<String, gtk::Box> {

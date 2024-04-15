@@ -29,7 +29,7 @@ fn main() -> glib::ExitCode {
 }
 
 fn build_ui(app: &AppWithDatastore) {
-    let window = ApplicationWindow::builder().application(app).title("metafolder").build();
+    let window = ApplicationWindow::builder().application(app).build();
     window.set_titlebar(Some(&make_header_bar(&window)));
     window.set_default_size(1024, 768);
     window.maximize();

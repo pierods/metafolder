@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use gtk::{glib, subclass::prelude::*};
+use gtk::{glib, Label, subclass::prelude::*};
 
 use crate::settings::MetaFolder;
 
@@ -9,6 +9,7 @@ use crate::settings::MetaFolder;
 // ObjectSubclass impl.
 pub struct AppWithDatastore {
     pub(crate) desktop: RefCell<MetaFolder>,
+    pub(crate) path: RefCell<Option<Label>>,
     pub(crate) drilldown: RefCell<Option<gtk::Switch>>,
     pub(crate) bg_color: RefCell<Option<gtk::ColorDialogButton>>,
     pub(crate) zoom_button: RefCell<Option<gtk::Button>>,

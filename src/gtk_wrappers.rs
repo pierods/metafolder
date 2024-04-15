@@ -140,3 +140,10 @@ pub fn set_zoom_widgets(w: &impl IsA<gtk::Widget>, zoom: bool, zoom_x: i32, zoom
     let zoom_y_scale = zoom_y_scale_opt.unwrap();
     zoom_y_scale.set_value(zoom_y as f64);
 }
+
+pub fn set_path(w: &impl IsA<gtk::Widget>, path: String) {
+    let app = get_application(w);
+    let binding = app.imp().path.borrow();
+    let bg = binding.as_ref();
+    bg.unwrap().set_label(&path);
+}
