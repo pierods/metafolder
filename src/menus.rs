@@ -66,7 +66,7 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     bar.pack_start(&text_color);
 
     let app_name_pango = String::from("<span font_weight=\"bold\">metafolder</span>");
-    let app_name_label = Label::new(Some(app_name_pango.as_str()));
+    let app_name_label = Label::builder().use_markup(true).label(app_name_pango.as_str()).build();
     let path_label = Label::new(Some(""));
     let title_widget = gtk::Box::builder().orientation(Orientation::Vertical).valign(Align::Center).build();
     title_widget.append(&app_name_label);
