@@ -1,10 +1,13 @@
+use crate::glib::clone;
+use crate::glib;
 use crate::gtk_wrappers::set_path;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use gtk::{ApplicationWindow, Fixed};
-use gtk::prelude::{Cast, FixedExt, WidgetExt};
+use gtk::{ApplicationWindow, Fixed, gio};
+use gtk::gio::{Cancellable, File, FileMonitorEvent, FileMonitorFlags};
+use gtk::prelude::{Cast, FileExt, FileMonitorExt, FixedExt, IsA, WidgetExt};
 use gtk::prelude::GtkWindowExt;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
@@ -47,12 +50,12 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     drop_target.connect_drop(move |_drop_target, dnd_msg, x, y| {
         match gtk_wrappers::extract_from_variant(dnd_msg) {
             Ok(dnd_info) => {
-                let mf = data_store.imp().desktop.borrow();
+                let mf = data_store.imp().metafolder.borrow();
                 let cell = mf.get_cell(dnd_info.name.clone());
                 if gtk_wrappers::is_something_underneath(dnd_info.name.clone(), desktop_clone.borrow().as_ref(), x - dnd_info.grabbed_x, y - dnd_info.grabbed_y, dnd_info.w, dnd_info.h) {
                     return false;
                 }
-                if let Some(err) = data_store.imp().desktop.borrow().arrange_cells_and_save_settings(desktop_clone.borrow().as_ref(), dnd_info.name.as_str(), x - dnd_info.grabbed_x, y - dnd_info.grabbed_y) {
+                if let Some(err) = data_store.imp().metafolder.borrow().arrange_cells_and_save_settings(desktop_clone.borrow().as_ref(), dnd_info.name.as_str(), x - dnd_info.grabbed_x, y - dnd_info.grabbed_y) {
                     let alert = gtk::AlertDialog::builder().modal(true).detail(err.to_string()).message("folder settings could not be saved").build();
                     let root = <Fixed as AsRef<Fixed>>::as_ref(&desktop_clone.borrow()).root().unwrap();
                     let app_window: ApplicationWindow = root.downcast().unwrap();
@@ -71,7 +74,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     desktop_rc.clone().borrow().add_controller(drop_target);
 
     let data_store = gtk_wrappers::get_application(window);
-    data_store.imp().desktop.borrow_mut().build_new(&metafolder_rc.clone().borrow());
+    data_store.imp().metafolder.borrow_mut().build_new(&metafolder_rc.clone().borrow());
     // must do it after drawing desktop because it will trigger a save settings and go out of sync b/c done before data_store.desktop is set
     //  (therefore going to the wrong path)
 
@@ -79,11 +82,43 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     set_bgcolor_button_color(window, bg_color);
     if zoom {
         let ds = gtk_wrappers::get_application(window);
-        ds.imp().desktop.borrow_mut().zoom_and_set_zoom_widgets(zoom_x, zoom_y, window);
+        ds.imp().metafolder.borrow_mut().zoom_and_set_zoom_widgets(zoom_x, zoom_y, window);
     } else {
         set_zoom_widgets(window, false, 100, 100);
     }
-    set_path(window, path);
+    set_path(window, path.clone());
+
+    let watched = gio::File::for_path(path);
+    let monitor = watched.monitor_directory(FileMonitorFlags::WATCH_MOVES, None::<&Cancellable>).expect("Fatal: cannot monitor directory");
+    monitor.connect_changed(clone!(@weak window => move |_, f, _, event |{
+        process_file_changes(f, event, &window);
+    }));
+    let ds = gtk_wrappers::get_application(window);
+    ds.imp().monitor.replace(Some(monitor));
+}
+
+fn process_file_changes(f: &File, event: FileMonitorEvent, w: &impl IsA<gtk::Widget>) {
+    match event {
+        FileMonitorEvent::Deleted => {
+            println!("delete-{:?}", f);
+        }
+        FileMonitorEvent::Created => {
+            println!("create-{:?}", f);
+        }
+        FileMonitorEvent::Moved => {
+            println!("moved-{:?}", f);
+        }
+        FileMonitorEvent::Renamed => {
+            println!("rename-{:?}", f);
+        }
+        FileMonitorEvent::MovedIn => {
+            println!("in-{:?}", f);
+        }
+        FileMonitorEvent::MovedOut => {
+            println!("out-{:?}", f);
+        }
+        _ => {}
+    }
 }
 
 fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoFolder) -> HashMap<String, gtk::Box> {

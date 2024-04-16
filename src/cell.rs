@@ -54,7 +54,7 @@ pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box 
     gesture_click.connect_pressed(clone!(@weak  desktop_icon => @default-return (), move |_, clicks, _, _| {
         if clicks == 2 {
             let data_store = get_application(&desktop_icon);
-            let current_path = data_store.imp().desktop.borrow().get_current_path();
+            let current_path = data_store.imp().metafolder.borrow().get_current_path();
             if dir_item.mime_type == "inode/directory" {
                 let app = get_application(&desktop_icon);
                 let drilldown = app.imp().drilldown.borrow().as_ref().unwrap().state();
@@ -112,7 +112,7 @@ pub(crate) fn make_drag_source(name: String, desktop_icon: &gtk::Box, layout: &F
     drag_source.connect_prepare(
         clone!(@weak  desktop_icon => @default-return None, move |me, x, y| {
             let ds = gtk_wrappers::get_application(&desktop_icon);
-            if ds.imp().desktop.borrow_mut().zoom {
+            if ds.imp().metafolder.borrow_mut().zoom {
                 me.drag_cancel();
                 alert(&desktop_icon, "Cannot move".to_string(), "Desktop is zoomed - either unzoom or commit to move".to_string());
                 return None

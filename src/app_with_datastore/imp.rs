@@ -1,6 +1,7 @@
 use std::cell::RefCell;
 
 use gtk::{glib, Label, subclass::prelude::*};
+use gtk::gio::FileMonitor;
 
 use crate::settings::MetaFolder;
 
@@ -8,8 +9,9 @@ use crate::settings::MetaFolder;
 // By implementing Default we don't have to provide a `new` fn in our
 // ObjectSubclass impl.
 pub struct AppWithDatastore {
-    pub(crate) desktop: RefCell<MetaFolder>,
+    pub(crate) metafolder: RefCell<MetaFolder>,
     pub(crate) path: RefCell<Option<Label>>,
+    pub(crate) monitor: RefCell<Option<FileMonitor>>,
     pub(crate) drilldown: RefCell<Option<gtk::Switch>>,
     pub(crate) bg_color: RefCell<Option<gtk::ColorDialogButton>>,
     pub(crate) zoom_button: RefCell<Option<gtk::Button>>,

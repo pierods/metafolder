@@ -49,36 +49,36 @@ pub(crate) fn make_zoom() -> (Popover, Scale, Scale) {
     let commit = gtk::Button::builder().label("commit").build();
     commit.connect_clicked(clone!(@weak popover, @weak zoomx, @weak zoomy =>  move|_b| {
         let ds = gtk_wrappers::get_application(&popover);
-        ds.imp().desktop.borrow_mut().zoom_commit_and_save_settings(&popover);
+        ds.imp().metafolder.borrow_mut().zoom_commit_and_save_settings(&popover);
     }));
     grid.put(&commit, 0f64, 0f64);
 
     let zero = gtk::Button::builder().label("zero").build();
     zero.connect_clicked(clone!(@weak popover, @weak zoomx, @weak zoomy => move |_b| {
         let ds = gtk_wrappers::get_application(&popover);
-        ds.imp().desktop.borrow_mut().unzoom_and_save_settings(&popover);
+        ds.imp().metafolder.borrow_mut().unzoom_and_save_settings(&popover);
     }));
     grid.put(&zero, 100f64, 0f64);
 
     let gesture_click_y = GestureClick::new();
     gesture_click_y.connect_unpaired_release(clone!(@weak zoomx, @weak zoomy, @weak popover => move |_click, _, _, _, _|{
         let ds = gtk_wrappers::get_application(&popover);
-        ds.imp().desktop.borrow_mut().zoom_and_save_settings(zoomx.value() as i32, zoomy.value() as i32, &popover);
+        ds.imp().metafolder.borrow_mut().zoom_and_save_settings(zoomx.value() as i32, zoomy.value() as i32, &popover);
     }));
     gesture_click_y.connect_stopped(clone!(@weak zoomx, @weak zoomy, @weak popover => move|_click| {
         let ds = gtk_wrappers::get_application(&popover);
-        ds.imp().desktop.borrow_mut().zoom_and_save_settings(zoomx.value() as i32, zoomy.value() as i32, &popover);
+        ds.imp().metafolder.borrow_mut().zoom_and_save_settings(zoomx.value() as i32, zoomy.value() as i32, &popover);
     }));
     zoomy.add_controller(gesture_click_y);
 
     let gesture_click_x = GestureClick::new();
     gesture_click_x.connect_unpaired_release(clone!(@weak zoomx, @weak zoomy, @weak popover => move |_click, _, _, _, _|{
         let ds = gtk_wrappers::get_application(&popover);
-        ds.imp().desktop.borrow_mut().zoom_and_save_settings(zoomx.value() as i32, zoomy.value() as i32, &popover);
+        ds.imp().metafolder.borrow_mut().zoom_and_save_settings(zoomx.value() as i32, zoomy.value() as i32, &popover);
     }));
     gesture_click_x.connect_stopped(clone!(@weak zoomx, @weak zoomy, @weak popover => move|_click| {
         let ds = gtk_wrappers::get_application(&popover);
-        ds.imp().desktop.borrow_mut().zoom_and_save_settings(zoomx.value() as i32, zoomy.value() as i32, &popover);
+        ds.imp().metafolder.borrow_mut().zoom_and_save_settings(zoomx.value() as i32, zoomy.value() as i32, &popover);
     }));
     zoomx.add_controller(gesture_click_x);
 

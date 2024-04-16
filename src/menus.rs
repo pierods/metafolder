@@ -37,7 +37,7 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     let (popover, zoom_x_scale, zoom_y_scale) = zoom::make_zoom();
     popover.connect_closed(clone!(@weak zoom_button => move |_| {
         let ds = gtk_wrappers::get_application(&zoom_button);
-        if ds.imp().desktop.borrow().zoom {
+        if ds.imp().metafolder.borrow().zoom {
             let folder_icon = &gtk::Image::builder().icon_name("folder").css_classes(["folder_zoomed"]).build();
             zoom_button.set_css_classes(&["folder_zoomed"]);
             zoom_button.set_child(Some(folder_icon));
@@ -86,7 +86,7 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
 
 fn background_color_action(cdb: &ColorDialogButton) {
     let ds = gtk_wrappers::get_application(cdb);
-    match ds.imp().desktop.borrow_mut().update_background_color(cdb.rgba().to_string()) {
+    match ds.imp().metafolder.borrow_mut().update_background_color(cdb.rgba().to_string()) {
         None => { gtk_wrappers::set_window_background(cdb.rgba().to_string()); }
         Some(err) => {
             alert(cdb, "folder settings could not be saved".to_string(), err.to_string());
@@ -96,7 +96,7 @@ fn background_color_action(cdb: &ColorDialogButton) {
 
 fn drilldown_action(sw: &Switch, state: bool) -> Propagation {
     let ds = gtk_wrappers::get_application(sw);
-    let x = match ds.imp().desktop.borrow_mut().set_drilldown(state) {
+    let x = match ds.imp().metafolder.borrow_mut().set_drilldown(state) {
         None => { Propagation::Proceed }
         Some(err) => {
             alert(sw, "folder settings could not be saved".to_string(), err.to_string());
@@ -108,7 +108,7 @@ fn drilldown_action(sw: &Switch, state: bool) -> Propagation {
 
 fn up_button_action(b: &Button) {
     let ds = gtk_wrappers::get_application(b);
-    let current_path = ds.imp().desktop.borrow().get_current_path();
+    let current_path = ds.imp().metafolder.borrow().get_current_path();
     match files::up(&current_path) {
         None => { alert(b, "nowhere to go".to_string(), "".to_string()); }
         Some(up) => {
