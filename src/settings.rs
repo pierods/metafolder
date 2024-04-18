@@ -22,6 +22,14 @@ pub struct MetaFolder {
 
 
 impl MetaFolder {
+    pub(crate) fn delete_cell(&mut self, name : String) -> (gtk::Box, Option<Error>) {
+        let cell = self.cell_map.remove(name.as_str());
+        let mut memo_folder = load_settings(self.current_path.clone());
+        if memo_folder.icons.remove(name.as_str()).is_none() {
+            println!("Unexpected: cell {} not found", name)
+        }
+        (cell.unwrap(), files::save_settings(self.current_path.clone(), memo_folder))
+    }
     pub(crate) fn zoom_and_set_zoom_widgets(&mut self, zoom_x: i32, zoom_y: i32, w: &impl IsA<gtk::Widget>) {
         self.move_to_zoomed(zoom_x, zoom_y, w);
         set_zoom_widgets(w, true, zoom_x, zoom_y);

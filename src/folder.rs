@@ -91,16 +91,19 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     let watched = gio::File::for_path(path);
     let monitor = watched.monitor_directory(FileMonitorFlags::WATCH_MOVES, None::<&Cancellable>).expect("Fatal: cannot monitor directory");
     monitor.connect_changed(clone!(@weak window => move |_, f, _, event |{
-        process_file_changes(f, event, &window);
+        process_file_changes(f, event, desktop.borrow().as_ref());
     }));
     let ds = gtk_wrappers::get_application(window);
     ds.imp().monitor.replace(Some(monitor));
 }
 
-fn process_file_changes(f: &File, event: FileMonitorEvent, w: &impl IsA<gtk::Widget>) {
+fn process_file_changes(f: &File, event: FileMonitorEvent, d: &Fixed) {
     match event {
         FileMonitorEvent::Deleted => {
-            println!("delete-{:?}", f);
+            let ds = gtk_wrappers::get_application(d);
+            let name = f.basename().expect("Fatal: no basename");
+            let (icon, _err) = ds.imp().metafolder.borrow_mut().delete_cell(name.to_str().unwrap().to_string());
+            d.remove(&icon);
         }
         FileMonitorEvent::Created => {
             println!("create-{:?}", f);

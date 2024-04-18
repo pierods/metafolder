@@ -9,6 +9,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::app_with_datastore::AppWithDatastore;
 use crate::cell::DNDInfo;
+use crate::DEFAULT_BG_COLOR;
 
 pub fn is_something_underneath(name: String, d: &Fixed, x: f64, y: f64, w: f64, h: f64) -> bool {
     struct Point {
@@ -109,7 +110,10 @@ pub fn set_drilldown_switch_value(w: &impl IsA<gtk::Widget>, state: bool) {
     dd.unwrap().set_active(state);
 }
 
-pub fn set_bgcolor_button_color(w: &impl IsA<gtk::Widget>, color: String) {
+pub fn set_bgcolor_button_color(w: &impl IsA<gtk::Widget>, mut color: String) {
+    if color == "" {
+        color = DEFAULT_BG_COLOR.to_string();
+    }
     let app = get_application(w);
     let binding = app.imp().bg_color.borrow();
     let bg = binding.as_ref();
