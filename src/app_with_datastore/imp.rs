@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use gtk::{glib, Label, subclass::prelude::*};
 use gtk::gio::FileMonitor;
 
-use crate::settings::MetaFolder;
+use crate::metafolder::MetaFolder;
 
 #[derive(Debug, Default)]
 // By implementing Default we don't have to provide a `new` fn in our

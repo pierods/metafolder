@@ -24,7 +24,7 @@ pub(crate) struct DNDInfo {
     pub(crate) grabbed_y: f64,
 }
 
-pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box {
+pub fn make_cell(path: String, dir_item: &files::DirItem, size: i32) -> gtk::Box {
     let name = dir_item.name.clone();
     let img = generate_icon(path, &dir_item, size);
     img.set_tooltip_text(Some(dir_item.name.as_str()));
@@ -51,11 +51,12 @@ pub fn make_cell(path: String, dir_item: files::DirItem, size: i32) -> gtk::Box 
     desktop_icon.append(&img);
     desktop_icon.append(&label);
     let gesture_click = GestureClick::new();
-    gesture_click.connect_pressed(clone!(@weak  desktop_icon => @default-return (), move |_, clicks, _, _| {
+    let mime_type = dir_item.mime_type.clone();
+    gesture_click.connect_pressed(clone!(@strong mime_type, @weak desktop_icon => @default-return (), move |_, clicks, _, _| {
         if clicks == 2 {
             let data_store = get_application(&desktop_icon);
             let current_path = data_store.imp().metafolder.borrow().get_current_path();
-            if dir_item.mime_type == "inode/directory" {
+            if mime_type == "inode/directory" {
                 let app = get_application(&desktop_icon);
                 let drilldown = app.imp().drilldown.borrow().as_ref().unwrap().state();
                 if  drilldown{

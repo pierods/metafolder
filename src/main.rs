@@ -13,7 +13,7 @@ mod cell;
 mod menus;
 mod app_with_datastore;
 mod gtk_wrappers;
-mod settings;
+mod metafolder;
 mod zoom;
 
 const APP_ID: &str = "org.github.pierods.metafolder";
@@ -22,7 +22,7 @@ const ICON_SIZE: i32 = 60;
 const INITIAL_DESKTOP_WIDTH: i32 = 1024;
 const DROP_TYPE: Type = Type::VARIANT;
 const DEFAULT_BG_COLOR: &str = "rgba(170, 170, 170, 1)";
-const STYLES: &str = " .folder_zoomed {background-image: none; background-color: rgba(245, 241, 39, 0.8);}";
+const CLASSES: &str = " .folder_zoomed {background-image: none; background-color: rgba(245, 241, 39, 0.8);} .icon_added {background-color: rgba(214, 39, 39, 0.35);}";
 
 fn main() -> glib::ExitCode {
     let app = AppWithDatastore::default();
@@ -37,7 +37,7 @@ fn build_ui(app: &AppWithDatastore) {
     window.maximize();
 
     let provider = gtk::CssProvider::new();
-    let bytes = glib::Bytes::from(String::from(("window {background-color:").to_owned() + DEFAULT_BG_COLOR + "; border-radius: 7px;}" + STYLES).as_bytes());
+    let bytes = glib::Bytes::from(String::from(("window {background-color:").to_owned() + DEFAULT_BG_COLOR + "; border-radius: 7px;} box {border-radius: 7px;}" + CLASSES).as_bytes());
     provider.load_from_bytes(&bytes);
     gtk::style_context_add_provider_for_display(
         &gdk::Display::default().expect("Could not connect to a display."),

@@ -1,19 +1,19 @@
 use crate::glib::clone;
 use crate::glib;
-use crate::gtk_wrappers::set_path;
+use crate::gtk_wrappers::{is_something_underneath, set_path};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
 use gtk::{ApplicationWindow, Fixed, gio};
 use gtk::gio::{Cancellable, File, FileMonitorEvent, FileMonitorFlags};
-use gtk::prelude::{Cast, FileExt, FileMonitorExt, FixedExt, IsA, WidgetExt};
+use gtk::prelude::{Cast, FileExt, FileMonitorExt, FixedExt, WidgetExt};
 use gtk::prelude::GtkWindowExt;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{cell, DRAG_ACTION, DROP_TYPE, files, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
 use crate::gtk_wrappers::{set_bgcolor_button_color, set_drilldown_switch_value, set_window_background, set_zoom_widgets};
-use crate::settings::MetaFolder;
+use crate::metafolder::MetaFolder;
 
 pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     let entries = files::get_entries(path.clone());
@@ -37,11 +37,14 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     metafolder.zoom = memo_folder.zoom;
     metafolder.zoom_x = memo_folder.zoom_x;
     metafolder.zoom_y = memo_folder.zoom_y;
-    metafolder.cell_map = draw_icons(path.clone(), entries, desktop.borrow().as_ref(), INITIAL_DESKTOP_WIDTH, ICON_SIZE, memo_folder);
+    let (cell_map, new_entries) = draw_icons(path.clone(), entries, desktop.borrow().as_ref(), INITIAL_DESKTOP_WIDTH, ICON_SIZE, memo_folder);
 
+    metafolder.cell_map = cell_map;
     let scrolled_window = gtk::ScrolledWindow::new();
     scrolled_window.set_child(Option::<&gtk::Fixed>::Some(desktop.borrow().as_ref()));
     window.set_child(Option::Some(&scrolled_window));
+
+    shuffle(new_entries, desktop.borrow().as_ref(), &metafolder.cell_map);
 
     let desktop_clone = desktop.clone();
     let drop_target = gtk::DropTarget::new(DROP_TYPE, DRAG_ACTION);
@@ -124,30 +127,57 @@ fn process_file_changes(f: &File, event: FileMonitorEvent, d: &Fixed) {
     }
 }
 
-fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, width: i32, size: i32, memo_desktop: files::MemoFolder) -> HashMap<String, gtk::Box> {
+fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, desktop_width: i32, icon_size: i32, memo_desktop: files::MemoFolder) -> (HashMap<String, gtk::Box>, HashSet<String>) {
     let mut cell_map: HashMap<String, gtk::Box> = HashMap::new();
-
+    let mut new_entries: HashSet<String> = HashSet::new();
     let mut r: i32 = 0;
     let mut c: i32 = 0;
     let memo_icons = memo_desktop.icons;
     for entry in entries {
         let name = entry.name.clone();
-        let cell = cell::make_cell(String::from(&path), entry, size);
+        let cell = cell::make_cell(String::from(&path), &entry, icon_size);
         let drag_source = cell::make_drag_source(name.clone(), &cell, &desktop);
         cell.add_controller(drag_source);
         if !memo_icons.contains_key(name.as_str()) {
             desktop.put(&cell, c as f64, r as f64);
+            new_entries.insert(name.clone());
         } else {
             desktop.put(&cell, memo_icons.get(name.as_str()).unwrap().position_x as f64, memo_icons.get(name.as_str()).unwrap().position_y as f64);
         }
 
         cell_map.insert(name, cell);
-        c += size + size / 3;
-        if c > width {
+        c += icon_size + icon_size / 3;
+        if c > desktop_width {
             c = 0;
-            r += 2 * size;
+            r += 2 * icon_size;
         }
-        //break;
     }
-    cell_map
+
+    (cell_map, new_entries)
+}
+fn shuffle(new_cells: HashSet<String>, desktop: &Fixed, cell_map: &HashMap<String, gtk::Box>) {
+    desktop.queue_allocate();
+    desktop.queue_draw();
+    desktop.queue_resize();
+    let mut c: i32 = 0;
+    let mut r: i32 = 0;
+
+    for (name, cell) in cell_map {
+        if new_cells.contains(name) {
+            let bounds = gtk_wrappers::get_widget_bounds(desktop, cell);
+            if is_something_underneath(name.clone(), desktop, bounds.x() as f64, bounds.y() as f64, ICON_SIZE as f64, ICON_SIZE as f64) {
+                (c, r) = compute_next_spot(c, r, INITIAL_DESKTOP_WIDTH, ICON_SIZE);
+                desktop.move_(cell, c as f64, r as f64);
+            }
+        }
+    }
+}
+
+fn compute_next_spot(mut c: i32, mut r: i32, width: i32, size: i32) -> (i32, i32) {
+    c += size + size / 3;
+    if c > width {
+        c = 0;
+        r += 2 * size;
+    }
+    (c, r)
 }

@@ -20,7 +20,6 @@ pub struct MetaFolder {
     pub(crate) zoom_y: i32,
 }
 
-
 impl MetaFolder {
     pub(crate) fn delete_cell(&mut self, name : String) -> (gtk::Box, Option<Error>) {
         let cell = self.cell_map.remove(name.as_str());

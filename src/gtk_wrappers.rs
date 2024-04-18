@@ -20,7 +20,7 @@ pub fn is_something_underneath(name: String, d: &Fixed, x: f64, y: f64, w: f64, 
     for p in points {
         match d.pick(p.x, p.y, PickFlags::DEFAULT) {
             None => {
-                println!("Unexpect: desktop.pick == None")
+                println!("Unexpected: desktop.pick == None")
             }
             Some(underlying_icon) => {
                 let widget_type = underlying_icon.type_().to_string();
