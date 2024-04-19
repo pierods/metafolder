@@ -1,12 +1,13 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use gtk::Fixed;
 use gtk::prelude::{FixedExt, IsA};
+use gtk::subclass::prelude::ObjectSubclassIsExt;
 use ignore::Error;
 
 use crate::{files, gtk_wrappers};
 use crate::files::{load_settings, MemoIcon};
-use crate::gtk_wrappers::{get_desktop, get_widget_bounds, set_zoom_widgets};
+use crate::gtk_wrappers::{get_application, get_desktop, get_widget_bounds, set_zoom_widgets};
 
 #[derive(Default, Debug)]
 pub struct MetaFolder {
@@ -14,13 +15,23 @@ pub struct MetaFolder {
     cell_size: i32,
     pub(crate) drilldown: bool,
     pub(crate) cell_map: HashMap<String, gtk::Box>,
+    pub(crate) added_cells: HashSet<String>,
     pub(crate) current_path: String,
     pub(crate) zoom: bool,
     pub(crate) zoom_x: i32,
     pub(crate) zoom_y: i32,
+
 }
 
 impl MetaFolder {
+
+    pub(crate) fn is_cell_added(&self, name: String) -> bool {
+        return self.added_cells.contains(name.as_str());
+    }
+
+    pub(crate) fn clear_added_flag(&mut self, name: String) {
+        self.added_cells.remove(name.as_str());
+    }
     pub(crate) fn delete_cell(&mut self, name : String) -> (gtk::Box, Option<Error>) {
         let cell = self.cell_map.remove(name.as_str());
         let mut memo_folder = load_settings(self.current_path.clone());
@@ -138,10 +149,10 @@ impl MetaFolder {
         self.unzoom(w);
         self.save_zoom_settings(false, 0, 0)
     }
-    pub(crate) fn arrange_cells_and_save_settings(&self, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> Option<Error> {
+    pub(crate) fn scan_positions_and_save_settings(&self, desktop: &Fixed, icon_file_path: &str, x: f64, y: f64) -> Option<Error> {
         let mut memo_folder = load_settings(self.current_path.clone());
         let mut icons: HashMap<String, MemoIcon> = HashMap::new();
-
+        let ds = get_application(desktop);
         for (path, gbox) in &self.cell_map {
             let memo_icon: MemoIcon;
             if path == icon_file_path {
@@ -150,6 +161,11 @@ impl MetaFolder {
                     position_y: y as i32,
                 };
             } else {
+                // don't consider newly added cells as having been deliberately placed where they are by the user
+                // and thereby don't save their position
+                if ds.imp().metafolder.borrow().added_cells.contains(path) {
+                    continue
+                }
                 let bounds = gtk_wrappers::get_widget_bounds(desktop, &gbox);
                 memo_icon = MemoIcon {
                     position_x: bounds.x() as i32,
@@ -168,17 +184,6 @@ impl MetaFolder {
         let mut memo_folder = load_settings(self.current_path.clone());
         memo_folder.background_color = new_color;
         files::save_settings(self.current_path.clone(), memo_folder)
-    }
-
-    pub(crate) fn build_new(&mut self, new_metafolder: &MetaFolder) {
-        self.current_path = new_metafolder.current_path.clone();
-        self.cell_size = new_metafolder.cell_size;
-        self.background_color = new_metafolder.background_color.clone();
-        self.drilldown = new_metafolder.drilldown;
-        self.cell_map = new_metafolder.cell_map.clone();
-        self.zoom = new_metafolder.zoom;
-        self.zoom_x = new_metafolder.zoom_x;
-        self.zoom_y = new_metafolder.zoom_y
     }
 
     pub(crate) fn get_cell(&self, csp: String) -> &gtk::Box {

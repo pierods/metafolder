@@ -113,7 +113,7 @@ pub(crate) fn make_drag_source(name: String, desktop_icon: &gtk::Box, layout: &F
     drag_source.connect_prepare(
         clone!(@weak  desktop_icon => @default-return None, move |me, x, y| {
             let ds = gtk_wrappers::get_application(&desktop_icon);
-            if ds.imp().metafolder.borrow_mut().zoom {
+            if ds.imp().metafolder.borrow().zoom {
                 me.drag_cancel();
                 alert(&desktop_icon, "Cannot move".to_string(), "Desktop is zoomed - either unzoom or commit to move".to_string());
                 return None
