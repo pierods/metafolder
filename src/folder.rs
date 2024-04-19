@@ -1,6 +1,6 @@
 use crate::glib::clone;
 use crate::glib;
-use crate::gtk_wrappers::{set_path};
+use crate::gtk_wrappers::{is_something_underneath, set_path};
 use std::collections::{HashMap, HashSet};
 
 use gtk::{ApplicationWindow, Fixed, gio};
@@ -82,7 +82,7 @@ fn drop_action(dnd_msg: &Value, desktop: &Fixed, x: f64, y: f64) -> bool {
                 return false;
             }
             let mut mf = data_store.imp().metafolder.borrow_mut();
-            if mf.is_cell_added(name.clone()) {
+            if mf.is_cell_newly_added(name.clone()) {
                 mf.clear_added_flag(name.clone());
             }
             drop(mf);
@@ -115,7 +115,17 @@ fn process_file_changes(f: &File, event: FileMonitorEvent, d: &Fixed) {
             d.remove(&icon);
         }
         FileMonitorEvent::Created => {
-            println!("create-{:?}", f);
+            let full_path_unwrap = f.path().unwrap();
+            let full_path = full_path_unwrap.to_str().unwrap();
+            let file_info = files::get_file_info(full_path.to_string());
+
+            let cell = cell::make_cell(full_path.to_string(), &file_info.unwrap(), ICON_SIZE);
+            let drag_source = cell::make_drag_source(f.basename().unwrap().to_str().unwrap().to_string(), &cell, d);
+            cell.add_controller(drag_source);
+            cell.set_css_classes(&["icon_added"]);
+            drop_icon_on_free_space(d, &cell, ICON_SIZE, INITIAL_DESKTOP_WIDTH);
+            let ds = gtk_wrappers::get_application(d);
+            ds.imp().metafolder.borrow_mut().add_cell(f.basename().unwrap().to_str().unwrap().to_string(), cell);
         }
         FileMonitorEvent::Moved => {
             println!("moved-{:?}", f);
@@ -169,4 +179,18 @@ fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, d
     }
 
     (cell_map, new_entries)
+}
+
+fn drop_icon_on_free_space(d: &Fixed, icon: &gtk::Box, icon_size : i32, desktop_width: i32) {
+    let mut r: i32 = 0;
+    let mut c: i32 = 0;
+
+    while is_something_underneath("".to_string(), d, c as f64, r as f64, icon_size as f64, icon_size as f64) {
+        c += icon_size + icon_size / 3;
+        if c > desktop_width {
+            c = 0;
+            r += 2 * icon_size;
+        }
+    }
+    d.put(icon, c as f64, r as f64);
 }

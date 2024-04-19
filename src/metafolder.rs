@@ -24,8 +24,12 @@ pub struct MetaFolder {
 }
 
 impl MetaFolder {
+    pub(crate) fn add_cell(&mut self, name: String, cell: gtk::Box) {
+        self.cell_map.insert(name.clone(), cell);
+        self.added_cells.insert(name);
+    }
 
-    pub(crate) fn is_cell_added(&self, name: String) -> bool {
+    pub(crate) fn is_cell_newly_added(&self, name: String) -> bool {
         return self.added_cells.contains(name.as_str());
     }
 

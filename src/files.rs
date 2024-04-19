@@ -65,7 +65,7 @@ pub struct DirItem {
 }
 
 
-fn get_file_info(path_name: String) -> Option<DirItem> {
+pub(crate) fn get_file_info(path_name: String) -> Option<DirItem> {
     let mut dir_item: DirItem = DirItem::default();
     let g_file = gio::File::for_path(path_name.clone());
 
