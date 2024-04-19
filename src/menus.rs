@@ -27,9 +27,9 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     });
     bar.pack_start(&drilldown_switch);
 
-    bar.pack_start(&gtk::Label::builder().label("memorize").build());
-    let memorize_switch = gtk::Switch::builder().state(true).active(true).build();
-    bar.pack_start(&memorize_switch);
+    // bar.pack_start(&gtk::Label::builder().label("memorize").build());
+    // let memorize_switch = gtk::Switch::builder().state(true).active(true).build();
+    // bar.pack_start(&memorize_switch);
 
     let zoom_button = gtk::Button::builder().icon_name("folder").build();
 
