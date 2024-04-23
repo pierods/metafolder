@@ -108,13 +108,13 @@ fn drop_action(dnd_msg: &Value, desktop: &Fixed, x: f64, y: f64) -> bool {
 
 fn process_file_changes(f: &File, event: FileMonitorEvent, d: &Fixed) {
     match event {
-        FileMonitorEvent::Deleted => {
+        FileMonitorEvent::Deleted | FileMonitorEvent::MovedOut => {
             let ds = gtk_wrappers::get_application(d);
             let name = f.basename().expect("Fatal: no basename");
             let (icon, _err) = ds.imp().metafolder.borrow_mut().delete_cell(name.to_str().unwrap().to_string());
             d.remove(&icon);
         }
-        FileMonitorEvent::Created => {
+        FileMonitorEvent::Created | FileMonitorEvent::MovedIn => {
             let full_path_unwrap = f.path().unwrap();
             let full_path = full_path_unwrap.to_str().unwrap();
             let file_info = files::get_file_info(full_path.to_string());
@@ -127,17 +127,11 @@ fn process_file_changes(f: &File, event: FileMonitorEvent, d: &Fixed) {
             let ds = gtk_wrappers::get_application(d);
             ds.imp().metafolder.borrow_mut().add_cell(f.basename().unwrap().to_str().unwrap().to_string(), cell);
         }
-        FileMonitorEvent::Moved => {
-            println!("moved-{:?}", f);
-        }
         FileMonitorEvent::Renamed => {
             println!("rename-{:?}", f);
         }
-        FileMonitorEvent::MovedIn => {
-            println!("in-{:?}", f);
-        }
-        FileMonitorEvent::MovedOut => {
-            println!("out-{:?}", f);
+        FileMonitorEvent::Moved => {
+            println!("moved-{:?}", f);
         }
         _ => {}
     }
