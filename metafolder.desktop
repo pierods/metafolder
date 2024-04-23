@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=metafolder
+Icon=folder
+Exec="metafolder"
+Comment=alternate icon visualizer
+Terminal=false
+StartupNotify=true

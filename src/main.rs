@@ -16,7 +16,7 @@ mod gtk_wrappers;
 mod metafolder;
 mod zoom;
 
-const APP_ID: &str = "org.github.pierods.metafolder";
+const APP_ID: &str = "metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
 const ICON_SIZE: i32 = 60;
 const INITIAL_DESKTOP_WIDTH: i32 = 1024;
@@ -31,10 +31,11 @@ fn main() -> glib::ExitCode {
 }
 
 fn build_ui(app: &AppWithDatastore) {
-    let window = ApplicationWindow::builder().application(app).build();
+    let window = ApplicationWindow::builder().application(app).name("metafolder").icon_name("folder").build();
     window.set_titlebar(Some(&make_header_bar(&window)));
     window.set_default_size(1024, 768);
     window.maximize();
+    glib::set_application_name("metafolder");
 
     let provider = gtk::CssProvider::new();
     let bytes = glib::Bytes::from(String::from(("window {background-color:").to_owned() + DEFAULT_BG_COLOR + "; border-radius: 7px;} box {border-radius: 7px;}" + CLASSES).as_bytes());
