@@ -2,7 +2,7 @@
 Version=1.0
 Type=Application
 Name=metafolder
-Icon=folder
+Icon=folder-symbolic
 Exec="metafolder"
 Comment=alternate icon visualizer
 Terminal=false

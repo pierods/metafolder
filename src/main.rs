@@ -25,17 +25,18 @@ const DEFAULT_BG_COLOR: &str = "rgba(170, 170, 170, 1)";
 const CLASSES: &str = " .folder_zoomed {background-image: none; background-color: rgba(245, 241, 39, 0.8);} .icon_added {background-color: rgba(214, 39, 39, 0.35);}";
 
 fn main() -> glib::ExitCode {
+    glib::set_application_name("metafolder");
     let app = AppWithDatastore::default();
+    app.set_application_id(Some("metafolder"));
     app.connect_activate(build_ui);
     app.run()
 }
 
 fn build_ui(app: &AppWithDatastore) {
-    let window = ApplicationWindow::builder().application(app).name("metafolder").icon_name("folder").build();
+    let window = ApplicationWindow::builder().application(app).title("metafolder").build();
     window.set_titlebar(Some(&make_header_bar(&window)));
     window.set_default_size(1024, 768);
     window.maximize();
-    glib::set_application_name("metafolder");
 
     let provider = gtk::CssProvider::new();
     let bytes = glib::Bytes::from(String::from(("window {background-color:").to_owned() + DEFAULT_BG_COLOR + "; border-radius: 7px;} box {border-radius: 7px;}" + CLASSES).as_bytes());

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
-use gtk::Fixed;
-use gtk::prelude::{FixedExt, IsA};
+use gtk::{Fixed};
+use gtk::prelude::{Cast, FixedExt, IsA, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 use ignore::Error;
 
@@ -24,6 +24,30 @@ pub struct MetaFolder {
 }
 
 impl MetaFolder {
+    pub(crate) fn rename_cell(&mut self, old_name: &str, new_name: &str) -> Option<Error> {
+        let cell = self.cell_map.remove(old_name).unwrap();
+        cell.set_tooltip_text(Some(new_name));
+        let image_widget = cell.first_child().unwrap();
+        image_widget.set_tooltip_text(Some(new_name));
+
+        let label_widget = cell.last_child().unwrap();
+        label_widget.set_tooltip_text(Some(new_name));
+        let label = label_widget.downcast::<gtk::Label>().unwrap();
+        let mut label_text = label.label().as_str().to_string();
+        label_text = label_text.replace(old_name, new_name);
+        label.set_label(label_text.as_str());
+        self.cell_map.insert(new_name.to_string(), cell);
+
+        let mut memo_folder = load_settings(self.current_path.clone());
+        let memo_icon = memo_folder.icons.remove(old_name);
+
+        if memo_icon.is_none() {
+            println!("Unexpected: cell {} not found", old_name)
+        }
+        memo_folder.icons.insert(new_name.to_string(), memo_icon.unwrap());
+        files::save_settings(self.current_path.clone(), memo_folder)
+    }
+
     pub(crate) fn add_cell(&mut self, name: String, cell: gtk::Box) {
         self.cell_map.insert(name.clone(), cell);
         self.added_cells.insert(name);
@@ -36,7 +60,7 @@ impl MetaFolder {
     pub(crate) fn clear_added_flag(&mut self, name: String) {
         self.added_cells.remove(name.as_str());
     }
-    pub(crate) fn delete_cell(&mut self, name : String) -> (gtk::Box, Option<Error>) {
+    pub(crate) fn delete_cell(&mut self, name: String) -> (gtk::Box, Option<Error>) {
         let cell = self.cell_map.remove(name.as_str());
         let mut memo_folder = load_settings(self.current_path.clone());
         if memo_folder.icons.remove(name.as_str()).is_none() {
@@ -168,7 +192,7 @@ impl MetaFolder {
                 // don't consider newly added cells as having been deliberately placed where they are by the user
                 // and thereby don't save their position
                 if ds.imp().metafolder.borrow().added_cells.contains(path) {
-                    continue
+                    continue;
                 }
                 let bounds = gtk_wrappers::get_widget_bounds(desktop, &gbox);
                 memo_icon = MemoIcon {

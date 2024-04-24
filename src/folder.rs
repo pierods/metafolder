@@ -65,8 +65,8 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
 
     let watched = gio::File::for_path(path);
     let monitor = watched.monitor_directory(FileMonitorFlags::WATCH_MOVES, None::<&Cancellable>).expect("Fatal: cannot monitor directory");
-    monitor.connect_changed(clone!(@weak window => move |_, f, _, event |{
-        process_file_changes(f, event, &desktop);
+    monitor.connect_changed(clone!(@weak window => move |_, f, other, event |{
+        process_file_changes(f, other, event, &desktop);
     }));
     let ds = gtk_wrappers::get_application(window);
     ds.imp().monitor.replace(Some(monitor));
@@ -106,7 +106,10 @@ fn drop_action(dnd_msg: &Value, desktop: &Fixed, x: f64, y: f64) -> bool {
     }
 }
 
-fn process_file_changes(f: &File, event: FileMonitorEvent, d: &Fixed) {
+fn process_file_changes(f: &File, other: Option<&File>, event: FileMonitorEvent, d: &Fixed) {
+    if f.basename().unwrap().to_str().unwrap() == ".metafolder" {
+        return;
+    }
     match event {
         FileMonitorEvent::Deleted | FileMonitorEvent::MovedOut => {
             let ds = gtk_wrappers::get_application(d);
@@ -128,12 +131,14 @@ fn process_file_changes(f: &File, event: FileMonitorEvent, d: &Fixed) {
             ds.imp().metafolder.borrow_mut().add_cell(f.basename().unwrap().to_str().unwrap().to_string(), cell);
         }
         FileMonitorEvent::Renamed => {
-            println!("rename-{:?}", f);
+            let old_name_binding = f.basename().unwrap();
+            let old_name = old_name_binding.to_str().unwrap();
+            let new_name_binding = other.unwrap().basename().unwrap();
+            let new_name = new_name_binding.to_str().unwrap();
+            let ds = gtk_wrappers::get_application(d);
+            ds.imp().metafolder.borrow_mut().rename_cell(old_name, new_name);
         }
-        FileMonitorEvent::Moved => {
-            println!("moved-{:?}", f);
-        }
-        _ => {}
+        _ => { println!("Unhandled file event on {}", f.basename().unwrap().to_str().unwrap());}
     }
 }
 
