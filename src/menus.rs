@@ -10,6 +10,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 use crate::{DEFAULT_BG_COLOR, files, gtk_wrappers, zoom};
 use crate::folder::draw_folder;
 use crate::gtk_wrappers::alert;
+use crate::text::make_text_formatter;
 
 pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     let bar = HeaderBar::new();
@@ -27,15 +28,11 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     });
     bar.pack_start(&drilldown_switch);
 
-    // bar.pack_start(&gtk::Label::builder().label("memorize").build());
-    // let memorize_switch = gtk::Switch::builder().state(true).active(true).build();
-    // bar.pack_start(&memorize_switch);
-
     let zoom_button = gtk::Button::builder().icon_name("folder").build();
 
     bar.pack_start(&zoom_button);
-    let (popover, zoom_x_scale, zoom_y_scale) = zoom::make_zoom();
-    popover.connect_closed(clone!(@weak zoom_button => move |_| {
+    let (zoom_popover, zoom_x_scale, zoom_y_scale) = zoom::make_zoom();
+    zoom_popover.connect_closed(clone!(@weak zoom_button => move |_| {
         let ds = gtk_wrappers::get_application(&zoom_button);
         if ds.imp().metafolder.borrow().zoom {
             let folder_icon = &gtk::Image::builder().icon_name("folder").css_classes(["folder_zoomed"]).build();
@@ -49,8 +46,8 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     }));
 
     zoom_button.connect_clicked(move |b| {
-        b.set_child(Some(&popover));
-        popover.set_visible(true);
+        b.set_child(Some(&zoom_popover));
+        zoom_popover.set_visible(true);
     });
 
     let background_dialog = ColorDialog::builder().modal(true).title("Pick a background color").with_alpha(true).build();
@@ -58,12 +55,24 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     background_color_button.connect_rgba_notify(|cdb| {
         background_color_action(cdb);
     });
-
     bar.pack_start(&background_color_button);
 
+    let text_button = gtk::Button::builder().label("a").build();
+    let text_popover = make_text_formatter();
+    text_popover.connect_closed(clone!(@weak text_button => move |_| {
+        text_button.set_label("a");
+    }));
+    text_button.connect_clicked(move |b| {
+        b.set_child(Some(&text_popover));
+        text_popover.set_visible(true);
+    });
+
+    bar.pack_start(&text_button);
+
     let text_color_dialog = ColorDialog::builder().modal(true).title("Pick a text color").with_alpha(true).build();
-    let text_color = ColorDialogButton::builder().rgba(&RGBA::parse(DEFAULT_BG_COLOR).unwrap()).dialog(&text_color_dialog).build();
-    bar.pack_start(&text_color);
+    let text_color_button = ColorDialogButton::builder().rgba(&RGBA::parse(DEFAULT_BG_COLOR).unwrap()).dialog(&text_color_dialog).build();
+
+    bar.pack_start(&text_color_button);
 
     let app_name_pango = String::from("<span font_weight=\"bold\">metafolder</span>");
     let app_name_label = Label::builder().use_markup(true).label(app_name_pango.as_str()).build();

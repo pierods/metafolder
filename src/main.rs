@@ -15,6 +15,7 @@ mod app_with_datastore;
 mod gtk_wrappers;
 mod metafolder;
 mod zoom;
+mod text;
 
 const APP_ID: &str = "metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
