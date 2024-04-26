@@ -26,7 +26,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     let zoom = memo_folder.zoom;
     let zoom_x = memo_folder.zoom_x;
     let zoom_y = memo_folder.zoom_y;
-    let mut metafolder = MetaFolder::default();
+    let mut metafolder = MetaFolder::new();
     metafolder.current_path = path.clone();
     metafolder.background_color = memo_folder.background_color.clone();
     metafolder.drilldown = memo_folder.drilldown;

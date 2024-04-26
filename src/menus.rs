@@ -71,7 +71,9 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
 
     let text_color_dialog = ColorDialog::builder().modal(true).title("Pick a text color").with_alpha(true).build();
     let text_color_button = ColorDialogButton::builder().rgba(&RGBA::parse(DEFAULT_BG_COLOR).unwrap()).dialog(&text_color_dialog).build();
-
+    text_color_button.connect_rgba_notify(|cdb| {
+        text_color_action(cdb);
+    });
     bar.pack_start(&text_color_button);
 
     let app_name_pango = String::from("<span font_weight=\"bold\">metafolder</span>");
@@ -91,6 +93,14 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     ds.imp().zoom_y.replace(Some(zoom_y_scale));
 
     bar
+}
+
+fn text_color_action(cdb: &ColorDialogButton) {
+    let ds = gtk_wrappers::get_application(cdb);
+    let mf = ds.imp().metafolder.borrow();
+    if let Some(err) = mf.change_font_color(cdb.rgba().to_str().to_string()) {
+        alert(cdb, "folder settings could not be saved".to_string(), err.to_string());
+    }
 }
 
 fn background_color_action(cdb: &ColorDialogButton) {

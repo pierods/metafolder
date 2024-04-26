@@ -1,15 +1,16 @@
 use std::collections::{HashMap, HashSet};
 
-use gtk::{Fixed};
+use gtk::Fixed;
 use gtk::prelude::{Cast, FixedExt, IsA, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 use ignore::Error;
+use regex::Regex;
 
 use crate::{files, gtk_wrappers};
 use crate::files::{load_settings, MemoIcon};
 use crate::gtk_wrappers::{get_application, get_desktop, get_widget_bounds, set_zoom_widgets};
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct MetaFolder {
     pub(crate) background_color: String,
     cell_size: i32,
@@ -21,9 +22,64 @@ pub struct MetaFolder {
     pub(crate) zoom_x: i32,
     pub(crate) zoom_y: i32,
 
+    font_size_replacer: Regex,
+    font_color_replacer: Regex,
+    rgba_color_matcher: Regex,
+}
+
+impl Default for MetaFolder {
+    fn default() -> Self {
+        MetaFolder::new()
+    }
 }
 
 impl MetaFolder {
+    pub(crate) fn new() -> Self {
+        let m = MetaFolder {
+            background_color: "".to_string(),
+            cell_size: 0,
+            drilldown: false,
+            cell_map: Default::default(),
+            added_cells: Default::default(),
+            current_path: "".to_string(),
+            zoom: false,
+            zoom_x: 0,
+            zoom_y: 0,
+            font_size_replacer: Regex::new("font_size=\"[^\"]+\"").unwrap(),
+            font_color_replacer: Regex::new("color=\"[^\"]+\"").unwrap(),
+            rgba_color_matcher: Regex::new("\\d+").unwrap(),
+        };
+        m
+    }
+    pub(crate) fn change_font_size(&self, style_size: &str) -> Option<Error> {
+        for (_, cell) in &self.cell_map {
+            let label_widget = cell.last_child().unwrap();
+            let label = label_widget.downcast::<gtk::Label>().unwrap();
+            let label_text = label.label().as_str().to_string();
+            let label_text = self.font_size_replacer.replace(label_text.as_str(), "font_size=\"".to_owned() + style_size + "\"").to_string();
+            label.set_label(label_text.as_str());
+        }
+        None
+    }
+
+    pub(crate) fn change_font_color(&self, rgba : String) -> Option<Error> {
+        println!("{}", rgba);
+        let rgb: Vec<_> = self.rgba_color_matcher.find_iter(rgba.as_str()).map(|m| m.as_str()).collect();
+        let r = rgb.get(0).unwrap().parse::<u16>().unwrap();
+        let g = rgb.get(1).unwrap().parse::<u16>().unwrap();
+        let b = rgb.get(2).unwrap().parse::<u16>().unwrap();
+        let hex = format!("#{:X}{:X}{:X}", r, g, b);
+        println!("{}", hex);
+        for (_, cell) in &self.cell_map {
+            let label_widget = cell.last_child().unwrap();
+            let label = label_widget.downcast::<gtk::Label>().unwrap();
+            let mut label_text = label.label().to_string();
+            label_text = self.font_color_replacer.replace(label_text.as_str(), "color=\"".to_owned() + hex.as_str() + "\"").to_string();
+            label.set_label(label_text.as_str());
+        }
+        None
+    }
+
     pub(crate) fn rename_cell(&mut self, old_name: &str, new_name: &str) -> Option<Error> {
         let cell = self.cell_map.remove(old_name).unwrap();
         cell.set_tooltip_text(Some(new_name));
