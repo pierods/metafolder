@@ -1,8 +1,10 @@
-use gtk::{Align, Button, glib, Label, Orientation, Switch};
-use crate::glib::clone;
+use gtk::{Align, Button, Label, Orientation, Switch};
 use gtk::{ApplicationWindow, ColorDialog, ColorDialogButton, HeaderBar};
 use gtk::gdk::RGBA;
 use gtk::glib::Propagation;
+
+use crate::glib::clone;
+use gtk::glib;
 
 use gtk::prelude::{BoxExt, ButtonExt, Cast, PopoverExt, WidgetExt};
 use gtk::subclass::prelude::ObjectSubclassIsExt;
@@ -10,7 +12,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 use crate::{DEFAULT_BG_COLOR, files, gtk_wrappers, zoom};
 use crate::folder::draw_folder;
 use crate::gtk_wrappers::alert;
-use crate::text::make_text_formatter;
+use crate::cell_editor::make_cell_formatter;
 
 pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     let bar = HeaderBar::new();
@@ -57,24 +59,24 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     });
     bar.pack_start(&background_color_button);
 
-    let text_button = gtk::Button::builder().label("a").build();
-    let text_popover = make_text_formatter();
-    text_popover.connect_closed(clone!(@weak text_button => move |_| {
-        text_button.set_label("a");
-    }));
-    text_button.connect_clicked(move |b| {
-        b.set_child(Some(&text_popover));
-        text_popover.set_visible(true);
-    });
-
-    bar.pack_start(&text_button);
-
     let text_color_dialog = ColorDialog::builder().modal(true).title("Pick a text color").with_alpha(true).build();
     let text_color_button = ColorDialogButton::builder().rgba(&RGBA::parse(DEFAULT_BG_COLOR).unwrap()).dialog(&text_color_dialog).build();
     text_color_button.connect_rgba_notify(|cdb| {
         text_color_action(cdb);
     });
     bar.pack_start(&text_color_button);
+
+    let cell_size_button = gtk::Button::builder().label("a").build();
+    let (cell_size_popover, text_scale, bold_switch, cell_size_scale )= make_cell_formatter();
+    cell_size_popover.connect_closed(clone!(@weak cell_size_button => move |_| {
+        cell_size_button.set_label("a");
+    }));
+    cell_size_button.connect_clicked(move |b| {
+        b.set_child(Some(&cell_size_popover));
+        cell_size_popover.set_visible(true);
+    });
+    bar.pack_start(&cell_size_button);
+
 
     let app_name_pango = String::from("<span font_weight=\"bold\">metafolder</span>");
     let app_name_label = Label::builder().use_markup(true).label(app_name_pango.as_str()).build();
@@ -86,11 +88,14 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
 
     let ds = gtk_wrappers::get_application(app_window);
     ds.imp().path.replace(Some(path_label));
-    ds.imp().drilldown.replace(Some(drilldown_switch));
-    ds.imp().bg_color.replace(Some(background_color_button));
+    ds.imp().drilldown_switch.replace(Some(drilldown_switch));
+    ds.imp().bg_color_button.replace(Some(background_color_button));
     ds.imp().zoom_button.replace(Some(zoom_button));
-    ds.imp().zoom_x.replace(Some(zoom_x_scale));
-    ds.imp().zoom_y.replace(Some(zoom_y_scale));
+    ds.imp().zoom_x_scale.replace(Some(zoom_x_scale));
+    ds.imp().zoom_y_scale.replace(Some(zoom_y_scale));
+    ds.imp().text_scale.replace(Some(text_scale));
+    ds.imp().bold_switch.replace(Some(bold_switch));
+    ds.imp().cell_size_scale.replace(Some(cell_size_scale));
 
     bar
 }
@@ -98,7 +103,7 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
 fn text_color_action(cdb: &ColorDialogButton) {
     let ds = gtk_wrappers::get_application(cdb);
     let mf = ds.imp().metafolder.borrow();
-    if let Some(err) = mf.change_font_color(cdb.rgba().to_str().to_string()) {
+    if let Some(err) = mf.change_font_color(cdb.rgba().to_str().to_string(), true) {
         alert(cdb, "folder settings could not be saved".to_string(), err.to_string());
     }
 }

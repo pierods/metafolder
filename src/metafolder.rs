@@ -6,14 +6,13 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 use ignore::Error;
 use regex::Regex;
 
-use crate::{files, gtk_wrappers};
+use crate::{CELL_SIZES, files, gtk_wrappers};
 use crate::files::{load_settings, MemoIcon};
 use crate::gtk_wrappers::{get_application, get_desktop, get_widget_bounds, set_zoom_widgets};
 
 #[derive(Debug)]
 pub struct MetaFolder {
     pub(crate) background_color: String,
-    cell_size: i32,
     pub(crate) drilldown: bool,
     pub(crate) cell_map: HashMap<String, gtk::Box>,
     pub(crate) added_cells: HashSet<String>,
@@ -24,6 +23,7 @@ pub struct MetaFolder {
 
     font_size_replacer: Regex,
     font_color_replacer: Regex,
+    font_weight_replacer: Regex,
     rgba_color_matcher: Regex,
 }
 
@@ -37,7 +37,6 @@ impl MetaFolder {
     pub(crate) fn new() -> Self {
         let m = MetaFolder {
             background_color: "".to_string(),
-            cell_size: 0,
             drilldown: false,
             cell_map: Default::default(),
             added_cells: Default::default(),
@@ -47,22 +46,59 @@ impl MetaFolder {
             zoom_y: 0,
             font_size_replacer: Regex::new("font_size=\"[^\"]+\"").unwrap(),
             font_color_replacer: Regex::new("color=\"[^\"]+\"").unwrap(),
+            font_weight_replacer: Regex::new("font_weight=\"[^\"]+\"").unwrap(),
             rgba_color_matcher: Regex::new("\\d+").unwrap(),
         };
         m
     }
-    pub(crate) fn change_font_size(&self, style_size: &str) -> Option<Error> {
+    pub(crate) fn change_cell_size(&self, cell_size: i32, save: bool) -> Option<Error> {
+        for (_, cell) in &self.cell_map {
+            cell.set_width_request(CELL_SIZES[cell_size as usize]);
+            let image_widget = cell.first_child().unwrap();
+            let image = image_widget.downcast::<gtk::Image>().unwrap();
+            image.set_pixel_size(CELL_SIZES[cell_size as usize]);
+        }
+        if !save {
+            return None;
+        }
+        let mut memo_folder = load_settings(self.current_path.clone());
+        memo_folder.cell_size = CELL_SIZES[cell_size as usize];
+        files::save_settings(self.current_path.clone(), memo_folder)
+    }
+
+    pub(crate) fn change_font_size(&self, style_size: String, save: bool) -> Option<Error> {
         for (_, cell) in &self.cell_map {
             let label_widget = cell.last_child().unwrap();
             let label = label_widget.downcast::<gtk::Label>().unwrap();
             let label_text = label.label().as_str().to_string();
-            let label_text = self.font_size_replacer.replace(label_text.as_str(), "font_size=\"".to_owned() + style_size + "\"").to_string();
+            let label_text = self.font_size_replacer.replace(label_text.as_str(), "font_size=\"".to_owned() + &style_size + "\"").to_string();
             label.set_label(label_text.as_str());
         }
-        None
+        if !save {
+            return None;
+        }
+        let mut memo_folder = load_settings(self.current_path.clone());
+        memo_folder.font_size = style_size.to_string();
+        files::save_settings(self.current_path.clone(), memo_folder)
+    }
+    pub(crate) fn change_bold(&self, bold: bool, save: bool) -> Option<Error> {
+        for (_, cell) in &self.cell_map {
+            let label_widget = cell.last_child().unwrap();
+            let label = label_widget.downcast::<gtk::Label>().unwrap();
+            let label_text = label.label().as_str().to_string();
+            let weight = if bold { "bold" } else { "normal" };
+            let label_text = self.font_weight_replacer.replace(label_text.as_str(), "font_weight=\"".to_owned() + weight + "\"").to_string();
+            label.set_label(label_text.as_str());
+        }
+        if !save {
+            return None;
+        }
+        let mut memo_folder = load_settings(self.current_path.clone());
+        memo_folder.font_bold = bold;
+        files::save_settings(self.current_path.clone(), memo_folder)
     }
 
-    pub(crate) fn change_font_color(&self, rgba : String) -> Option<Error> {
+    pub(crate) fn change_font_color(&self, rgba: String, save: bool) -> Option<Error> {
         println!("{}", rgba);
         let rgb: Vec<_> = self.rgba_color_matcher.find_iter(rgba.as_str()).map(|m| m.as_str()).collect();
         let r = rgb.get(0).unwrap().parse::<u16>().unwrap();
@@ -77,7 +113,12 @@ impl MetaFolder {
             label_text = self.font_color_replacer.replace(label_text.as_str(), "color=\"".to_owned() + hex.as_str() + "\"").to_string();
             label.set_label(label_text.as_str());
         }
-        None
+        if !save {
+            return None
+        }
+        let mut memo_folder = load_settings(self.current_path.clone());
+        memo_folder.font_color = hex;
+        files::save_settings(self.current_path.clone(), memo_folder)
     }
 
     pub(crate) fn rename_cell(&mut self, old_name: &str, new_name: &str) -> Option<Error> {

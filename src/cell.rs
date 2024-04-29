@@ -42,7 +42,6 @@ pub fn make_cell(path: String, dir_item: &files::DirItem, size: i32) -> gtk::Box
     label.set_justify(gtk::Justification::Center);
     label.set_halign(Align::Center);
     label.set_tooltip_text(Some(dir_item.name.as_str()));
-    // txt.set_valign(Align::End);
 
     let desktop_icon = gtk::Box::new(gtk::Orientation::Vertical, 10);
     desktop_icon.set_tooltip_text(Some(dir_item.name.as_str()));
@@ -58,7 +57,7 @@ pub fn make_cell(path: String, dir_item: &files::DirItem, size: i32) -> gtk::Box
             let current_path = data_store.imp().metafolder.borrow().get_current_path();
             if mime_type == "inode/directory" {
                 let app = get_application(&desktop_icon);
-                let drilldown = app.imp().drilldown.borrow().as_ref().unwrap().state();
+                let drilldown = app.imp().drilldown_switch.borrow().as_ref().unwrap().state();
                 if  drilldown{
                     let root = desktop_icon.root().unwrap();
                     let app_window_result = root.downcast::<ApplicationWindow>();

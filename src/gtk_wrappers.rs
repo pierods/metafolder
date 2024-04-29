@@ -104,7 +104,7 @@ pub fn alert(w: &impl IsA<gtk::Widget>, msg: String, err: String) {
 
 pub fn set_drilldown_switch_value(w: &impl IsA<gtk::Widget>, state: bool) {
     let app = get_application(w);
-    let binding = app.imp().drilldown.borrow();
+    let binding = app.imp().drilldown_switch.borrow();
     let dd = binding.as_ref();
     dd.unwrap().set_state(state);
     dd.unwrap().set_active(state);
@@ -115,7 +115,7 @@ pub fn set_bgcolor_button_color(w: &impl IsA<gtk::Widget>, mut color: String) {
         color = DEFAULT_BG_COLOR.to_string();
     }
     let app = get_application(w);
-    let binding = app.imp().bg_color.borrow();
+    let binding = app.imp().bg_color_button.borrow();
     let bg = binding.as_ref();
     bg.unwrap().set_rgba(&RGBA::parse(color).unwrap());
 }
@@ -134,18 +134,18 @@ pub fn set_zoom_widgets(w: &impl IsA<gtk::Widget>, zoom: bool, zoom_x: i32, zoom
         zoom_button.remove_css_class("folder_zoomed");
         zoom_button.set_child(Some(&gtk::Image::builder().icon_name("folder").build()));
     }
-    let binding_zoom_x_scale = app.imp().zoom_x.borrow();
+    let binding_zoom_x_scale = app.imp().zoom_x_scale.borrow();
     let zoom_x_scale_opt = binding_zoom_x_scale.as_ref();
     let zoom_x_scale = zoom_x_scale_opt.unwrap();
     zoom_x_scale.set_value(zoom_x as f64);
 
-    let binding_zoom_y_scale = app.imp().zoom_y.borrow();
+    let binding_zoom_y_scale = app.imp().zoom_y_scale.borrow();
     let zoom_y_scale_opt = binding_zoom_y_scale.as_ref();
     let zoom_y_scale = zoom_y_scale_opt.unwrap();
     zoom_y_scale.set_value(zoom_y as f64);
 }
 
-pub fn set_path(w: &impl IsA<gtk::Widget>, path: String) {
+pub fn set_title_path(w: &impl IsA<gtk::Widget>, path: String) {
     let app = get_application(w);
     let binding = app.imp().path.borrow();
     let bg = binding.as_ref();

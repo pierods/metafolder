@@ -1,16 +1,17 @@
 use crate::glib::clone;
 use crate::glib;
-use crate::gtk_wrappers::{is_something_underneath, set_path};
+use crate::gtk_wrappers::{is_something_underneath, set_title_path};
 use std::collections::{HashMap, HashSet};
 
 use gtk::{ApplicationWindow, Fixed, gio};
 use gtk::gio::{Cancellable, File, FileMonitorEvent, FileMonitorFlags};
 use gtk::glib::Value;
-use gtk::prelude::{Cast, FileExt, FileMonitorExt, FixedExt, WidgetExt};
+use gtk::prelude::{Cast, FileExt, FileMonitorExt, FixedExt, IsA, WidgetExt};
 use gtk::prelude::GtkWindowExt;
 use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{cell, DRAG_ACTION, DROP_TYPE, files, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
+use crate::files::MemoFolder;
 use crate::gtk_wrappers::{set_bgcolor_button_color, set_drilldown_switch_value, set_window_background, set_zoom_widgets};
 use crate::metafolder::MetaFolder;
 
@@ -21,11 +22,6 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     let memo_folder = files::load_settings(path.clone());
     set_window_background(memo_folder.background_color.clone());
 
-    let drilldown = memo_folder.drilldown;
-    let bg_color = memo_folder.background_color.clone();
-    let zoom = memo_folder.zoom;
-    let zoom_x = memo_folder.zoom_x;
-    let zoom_y = memo_folder.zoom_y;
     let mut metafolder = MetaFolder::new();
     metafolder.current_path = path.clone();
     metafolder.background_color = memo_folder.background_color.clone();
@@ -33,7 +29,7 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     metafolder.zoom = memo_folder.zoom;
     metafolder.zoom_x = memo_folder.zoom_x;
     metafolder.zoom_y = memo_folder.zoom_y;
-    let (cell_map, new_entries) = draw_icons(path.clone(), entries, &desktop, INITIAL_DESKTOP_WIDTH, ICON_SIZE, memo_folder);
+    let (cell_map, new_entries) = draw_icons(path.clone(), entries, &desktop, INITIAL_DESKTOP_WIDTH, ICON_SIZE, &memo_folder);
 
     metafolder.cell_map = cell_map;
     metafolder.added_cells = new_entries;
@@ -41,7 +37,6 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     scrolled_window.set_child(Option::<&gtk::Fixed>::Some(&desktop));
     window.set_child(Option::Some(&scrolled_window));
 
-    //let desktop_clone = desktop.clone();
     let drop_target = gtk::DropTarget::new(DROP_TYPE, DRAG_ACTION);
     drop_target.connect_drop(clone!(@weak desktop => @default-return false, move |_drop_target, dnd_msg, x, y| {
         drop_action(dnd_msg, &desktop, x, y)
@@ -53,23 +48,41 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
     // must do it after drawing desktop because it will trigger a save settings and go out of sync b/c done before data_store.desktop is set
     //  (therefore going to the wrong path)
 
-    set_drilldown_switch_value(window, drilldown);
-    set_bgcolor_button_color(window, bg_color);
-    if zoom {
-        let ds = gtk_wrappers::get_application(window);
-        ds.imp().metafolder.borrow_mut().zoom_and_set_zoom_widgets(zoom_x, zoom_y, window);
-    } else {
-        set_zoom_widgets(window, false, 100, 100);
-    }
-    set_path(window, path.clone());
+    apply_stored_settings(window, &memo_folder);
+    set_title_path(window, path.clone());
 
     let watched = gio::File::for_path(path);
     let monitor = watched.monitor_directory(FileMonitorFlags::WATCH_MOVES, None::<&Cancellable>).expect("Fatal: cannot monitor directory");
     monitor.connect_changed(clone!(@weak window => move |_, f, other, event |{
-        process_file_changes(f, other, event, &desktop);
+        monitor_folder(f, other, event, &desktop);
     }));
     let ds = gtk_wrappers::get_application(window);
     ds.imp().monitor.replace(Some(monitor));
+}
+
+fn apply_stored_settings(w: &impl IsA<gtk::Widget>, memo_folder: &MemoFolder) {
+    let ds = gtk_wrappers::get_application(w);
+    set_drilldown_switch_value(w, memo_folder.drilldown);
+    set_bgcolor_button_color(w, memo_folder.background_color.clone());
+    if memo_folder.zoom {
+        ds.imp().metafolder.borrow_mut().zoom_and_set_zoom_widgets(memo_folder.zoom_x, memo_folder.zoom_y, w);
+    } else {
+        set_zoom_widgets(w, false, 100, 100);
+    }
+    //TODO move scales and switches
+    if memo_folder.cell_size != 0 {
+        ds.imp().metafolder.borrow().change_cell_size(memo_folder.cell_size, false);
+
+    }
+    if memo_folder.font_color != "" {
+        ds.imp().metafolder.borrow().change_font_color(memo_folder.font_color.clone(), false);
+    }
+    if memo_folder.font_size != "" {
+        ds.imp().metafolder.borrow().change_font_size(memo_folder.font_size.clone(), false);
+    }
+    if !memo_folder.font_bold {
+        ds.imp().metafolder.borrow().change_bold(memo_folder.font_bold, false);
+    }
 }
 
 fn drop_action(dnd_msg: &Value, desktop: &Fixed, x: f64, y: f64) -> bool {
@@ -106,7 +119,7 @@ fn drop_action(dnd_msg: &Value, desktop: &Fixed, x: f64, y: f64) -> bool {
     }
 }
 
-fn process_file_changes(f: &File, other: Option<&File>, event: FileMonitorEvent, d: &Fixed) {
+fn monitor_folder(f: &File, other: Option<&File>, event: FileMonitorEvent, d: &Fixed) {
     if f.basename().unwrap().to_str().unwrap() == ".metafolder" {
         return;
     }
@@ -138,14 +151,14 @@ fn process_file_changes(f: &File, other: Option<&File>, event: FileMonitorEvent,
             let ds = gtk_wrappers::get_application(d);
             ds.imp().metafolder.borrow_mut().rename_cell(old_name, new_name);
         }
-        _ => { println!("Unhandled file event on {}", f.basename().unwrap().to_str().unwrap());}
+        _ => { println!("Unhandled file event on {}", f.basename().unwrap().to_str().unwrap()); }
     }
 }
 
-fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, desktop_width: i32, icon_size: i32, memo_desktop: files::MemoFolder) -> (HashMap<String, gtk::Box>, HashSet<String>) {
+fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, desktop_width: i32, icon_size: i32, memo_desktop: &files::MemoFolder) -> (HashMap<String, gtk::Box>, HashSet<String>) {
     let mut cell_map: HashMap<String, gtk::Box> = HashMap::new();
     let mut new_entries: HashSet<String> = HashSet::new();
-    let memo_icons = memo_desktop.icons;
+    let memo_icons = &memo_desktop.icons;
     let mut max_y = 0;
     for entry in entries {
         let name = entry.name.clone();
@@ -180,7 +193,7 @@ fn draw_icons(path: String, entries: HashSet<files::DirItem>, desktop: &Fixed, d
     (cell_map, new_entries)
 }
 
-fn drop_icon_on_free_space(d: &Fixed, icon: &gtk::Box, icon_size : i32, desktop_width: i32) {
+fn drop_icon_on_free_space(d: &Fixed, icon: &gtk::Box, icon_size: i32, desktop_width: i32) {
     let mut r: i32 = 0;
     let mut c: i32 = 0;
 

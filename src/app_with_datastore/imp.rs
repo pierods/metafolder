@@ -12,11 +12,14 @@ pub struct AppWithDatastore {
     pub(crate) metafolder: RefCell<MetaFolder>,
     pub(crate) path: RefCell<Option<Label>>,
     pub(crate) monitor: RefCell<Option<FileMonitor>>,
-    pub(crate) drilldown: RefCell<Option<gtk::Switch>>,
-    pub(crate) bg_color: RefCell<Option<gtk::ColorDialogButton>>,
+    pub(crate) drilldown_switch: RefCell<Option<gtk::Switch>>,
+    pub(crate) bg_color_button: RefCell<Option<gtk::ColorDialogButton>>,
     pub(crate) zoom_button: RefCell<Option<gtk::Button>>,
-    pub(crate) zoom_x: RefCell<Option<gtk::Scale>>,
-    pub(crate) zoom_y: RefCell<Option<gtk::Scale>>,
+    pub(crate) zoom_x_scale: RefCell<Option<gtk::Scale>>,
+    pub(crate) zoom_y_scale: RefCell<Option<gtk::Scale>>,
+    pub(crate) text_scale: RefCell<Option<gtk::Scale>>,
+    pub(crate) bold_switch: RefCell<Option<gtk::Switch>>,
+    pub(crate) cell_size_scale: RefCell<Option<gtk::Scale>>,
 }
 
 #[glib::object_subclass]
