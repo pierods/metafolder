@@ -1,9 +1,11 @@
+use crate::gtk_wrappers::{set_cell_size_scale, set_font_bold_switch, set_font_color_button, set_font_size_scale};
 use crate::glib::clone;
 use crate::glib;
 use crate::gtk_wrappers::{is_something_underneath, set_title_path};
 use std::collections::{HashMap, HashSet};
 
 use gtk::{ApplicationWindow, Fixed, gio};
+use gtk::gdk::RGBA;
 use gtk::gio::{Cancellable, File, FileMonitorEvent, FileMonitorFlags};
 use gtk::glib::Value;
 use gtk::prelude::{Cast, FileExt, FileMonitorExt, FixedExt, IsA, WidgetExt};
@@ -12,7 +14,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{cell, DRAG_ACTION, DROP_TYPE, files, gtk_wrappers, ICON_SIZE, INITIAL_DESKTOP_WIDTH};
 use crate::files::MemoFolder;
-use crate::gtk_wrappers::{set_bgcolor_button_color, set_drilldown_switch_value, set_window_background, set_zoom_widgets};
+use crate::gtk_wrappers::{set_bgcolor_button_color, set_drilldown_switch, set_window_background, set_zoom_widgets};
 use crate::metafolder::MetaFolder;
 
 pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
@@ -61,27 +63,35 @@ pub(crate) fn draw_folder(path: String, window: &ApplicationWindow) {
 }
 
 fn apply_stored_settings(w: &impl IsA<gtk::Widget>, memo_folder: &MemoFolder) {
-    let ds = gtk_wrappers::get_application(w);
-    set_drilldown_switch_value(w, memo_folder.drilldown);
+    set_drilldown_switch(w, memo_folder.drilldown);
     set_bgcolor_button_color(w, memo_folder.background_color.clone());
     if memo_folder.zoom {
+        let ds = gtk_wrappers::get_application(w);
         ds.imp().metafolder.borrow_mut().zoom_and_set_zoom_widgets(memo_folder.zoom_x, memo_folder.zoom_y, w);
     } else {
         set_zoom_widgets(w, false, 100, 100);
     }
-    //TODO move scales and switches
     if memo_folder.cell_size != 0 {
+        let ds = gtk_wrappers::get_application(w);
         ds.imp().metafolder.borrow().change_cell_size(memo_folder.cell_size, false);
-
+        set_cell_size_scale(ds, memo_folder.cell_size);
     }
     if memo_folder.font_color != "" {
-        ds.imp().metafolder.borrow().change_font_color(memo_folder.font_color.clone(), false);
+        let ds = gtk_wrappers::get_application(w);
+        //memo_folder stores hex colors
+        let rgba_color = RGBA::parse(memo_folder.font_color.clone());
+        ds.imp().metafolder.borrow().change_font_color(rgba_color.unwrap().to_string(), false);
+        set_font_color_button(w, memo_folder.font_color.clone());
     }
     if memo_folder.font_size != "" {
+        let ds = gtk_wrappers::get_application(w);
         ds.imp().metafolder.borrow().change_font_size(memo_folder.font_size.clone(), false);
+        set_font_size_scale(w, memo_folder.font_size.clone());
     }
-    if !memo_folder.font_bold {
-        ds.imp().metafolder.borrow().change_bold(memo_folder.font_bold, false);
+    if !memo_folder.font_bold.is_none() && !memo_folder.font_bold.unwrap() {
+        let ds = gtk_wrappers::get_application(w);
+        ds.imp().metafolder.borrow().change_bold(memo_folder.font_bold.unwrap(), false);
+        set_font_bold_switch(ds, false)
     }
 }
 

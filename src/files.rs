@@ -116,7 +116,7 @@ pub struct MemoFolder {
     pub(crate) background_color: String,
     pub(crate) font_color: String,
     pub(crate) font_size: String,
-    pub(crate) font_bold: bool,
+    pub(crate) font_bold: Option<bool>,
     pub(crate) cell_size: i32,
     pub(crate) drilldown: bool,
     pub(crate) zoom: bool,
@@ -126,6 +126,7 @@ pub struct MemoFolder {
 }
 
 pub(crate) fn save_settings(path: String, memo_desktop: MemoFolder) -> Option<Error> {
+    // TODO don't save on unchanged settings
     let serialized = serde_json::to_string_pretty(&memo_desktop).unwrap();
     let mut settings_path = path;
     settings_path.push_str(".metafolder");

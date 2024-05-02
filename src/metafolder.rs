@@ -6,7 +6,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 use ignore::Error;
 use regex::Regex;
 
-use crate::{CELL_SIZES, files, gtk_wrappers};
+use crate::{files, gtk_wrappers};
 use crate::files::{load_settings, MemoIcon};
 use crate::gtk_wrappers::{get_application, get_desktop, get_widget_bounds, set_zoom_widgets};
 
@@ -53,16 +53,16 @@ impl MetaFolder {
     }
     pub(crate) fn change_cell_size(&self, cell_size: i32, save: bool) -> Option<Error> {
         for (_, cell) in &self.cell_map {
-            cell.set_width_request(CELL_SIZES[cell_size as usize]);
+            cell.set_width_request(cell_size);
             let image_widget = cell.first_child().unwrap();
             let image = image_widget.downcast::<gtk::Image>().unwrap();
-            image.set_pixel_size(CELL_SIZES[cell_size as usize]);
+            image.set_pixel_size(cell_size);
         }
         if !save {
             return None;
         }
         let mut memo_folder = load_settings(self.current_path.clone());
-        memo_folder.cell_size = CELL_SIZES[cell_size as usize];
+        memo_folder.cell_size = cell_size;
         files::save_settings(self.current_path.clone(), memo_folder)
     }
 
@@ -94,18 +94,16 @@ impl MetaFolder {
             return None;
         }
         let mut memo_folder = load_settings(self.current_path.clone());
-        memo_folder.font_bold = bold;
+        memo_folder.font_bold = Some(bold);
         files::save_settings(self.current_path.clone(), memo_folder)
     }
 
     pub(crate) fn change_font_color(&self, rgba: String, save: bool) -> Option<Error> {
-        println!("{}", rgba);
         let rgb: Vec<_> = self.rgba_color_matcher.find_iter(rgba.as_str()).map(|m| m.as_str()).collect();
         let r = rgb.get(0).unwrap().parse::<u16>().unwrap();
         let g = rgb.get(1).unwrap().parse::<u16>().unwrap();
         let b = rgb.get(2).unwrap().parse::<u16>().unwrap();
         let hex = format!("#{:X}{:X}{:X}", r, g, b);
-        println!("{}", hex);
         for (_, cell) in &self.cell_map {
             let label_widget = cell.last_child().unwrap();
             let label = label_widget.downcast::<gtk::Label>().unwrap();

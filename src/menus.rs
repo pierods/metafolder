@@ -11,7 +11,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::{DEFAULT_BG_COLOR, files, gtk_wrappers, zoom};
 use crate::folder::draw_folder;
-use crate::gtk_wrappers::alert;
+use crate::gtk_wrappers::{alert};
 use crate::cell_editor::make_cell_formatter;
 
 pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
@@ -77,7 +77,6 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     });
     bar.pack_start(&cell_size_button);
 
-
     let app_name_pango = String::from("<span font_weight=\"bold\">metafolder</span>");
     let app_name_label = Label::builder().use_markup(true).label(app_name_pango.as_str()).build();
     let path_label = Label::new(Some(""));
@@ -87,14 +86,15 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     bar.set_title_widget(Some(&title_widget));
 
     let ds = gtk_wrappers::get_application(app_window);
-    ds.imp().path.replace(Some(path_label));
+    ds.imp().path_label.replace(Some(path_label));
     ds.imp().drilldown_switch.replace(Some(drilldown_switch));
     ds.imp().bg_color_button.replace(Some(background_color_button));
     ds.imp().zoom_button.replace(Some(zoom_button));
     ds.imp().zoom_x_scale.replace(Some(zoom_x_scale));
     ds.imp().zoom_y_scale.replace(Some(zoom_y_scale));
-    ds.imp().text_scale.replace(Some(text_scale));
-    ds.imp().bold_switch.replace(Some(bold_switch));
+    ds.imp().font_color_button.replace(Some(text_color_button));
+    ds.imp().text_size_scale.replace(Some(text_scale));
+    ds.imp().font_bold_switch.replace(Some(bold_switch));
     ds.imp().cell_size_scale.replace(Some(cell_size_scale));
 
     bar

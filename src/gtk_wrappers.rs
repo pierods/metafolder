@@ -9,7 +9,7 @@ use gtk::subclass::prelude::ObjectSubclassIsExt;
 
 use crate::app_with_datastore::AppWithDatastore;
 use crate::cell::DNDInfo;
-use crate::DEFAULT_BG_COLOR;
+use crate::{CELL_SIZES, DEFAULT_BG_COLOR, FONT_SIZES};
 
 pub fn is_something_underneath(name: String, d: &Fixed, x: f64, y: f64, w: f64, h: f64) -> bool {
     struct Point {
@@ -83,6 +83,53 @@ pub fn get_desktop(sw: &impl IsA<gtk::Widget>) -> Fixed {
     fixed
 }
 
+pub fn set_cell_size_scale(w: AppWithDatastore, cell_size: i32) {
+    //let app = get_application(w);
+    let cell_size_scale_binding = w.imp().cell_size_scale.borrow();
+    let cell_size_scale_opt = cell_size_scale_binding.as_ref();
+    let cell_size_scale = cell_size_scale_opt.unwrap();
+    let index = array_find(cell_size, CELL_SIZES);
+    if index.is_none() {
+        return;
+    }
+    cell_size_scale.set_value(index.unwrap() as f64);
+}
+
+fn array_find<T: Eq>(t :T, array: &[T]) -> Option<usize>{
+        for i in 0..array.len() {
+            if array[i] == t {
+                return Some(i)
+            }
+        }
+    None
+}
+
+pub fn set_font_size_scale(w: &impl IsA<gtk::Widget>, font_size: String) {
+    let app = get_application(w);
+    let font_size_scale_binding = app.imp().text_size_scale.borrow();
+    let text_scale_opt = font_size_scale_binding.as_ref();
+    let text_size_scale = text_scale_opt.unwrap();
+    let index = array_find(font_size.as_str(), FONT_SIZES);
+    if index.is_none() {
+        return;
+    }
+    text_size_scale.set_value(index.unwrap() as f64);
+}
+
+pub fn set_font_bold_switch(w: AppWithDatastore, state: bool) {
+    let binding = w.imp().font_bold_switch.borrow();
+    let fb = binding.as_ref();
+    let fbs = fb.unwrap();
+    fbs.set_state(state);
+    fbs.set_active(state);
+}
+pub fn set_font_color_button(w: &impl IsA<gtk::Widget>, font_color: String) {
+    let app = get_application(w);
+    let binding = app.imp().font_color_button.borrow();
+    let fc = binding.as_ref();
+    fc.unwrap().set_rgba(&RGBA::parse(font_color).unwrap());
+}
+
 pub fn set_window_background(rgba: String) {
     let color = String::from("window {background-color:").to_owned() + rgba.as_str() + "; border-radius: 7px;}";
     let provider = gtk::CssProvider::new();
@@ -102,7 +149,7 @@ pub fn alert(w: &impl IsA<gtk::Widget>, msg: String, err: String) {
     alert.show(Some(&app_window));
 }
 
-pub fn set_drilldown_switch_value(w: &impl IsA<gtk::Widget>, state: bool) {
+pub fn set_drilldown_switch(w: &impl IsA<gtk::Widget>, state: bool) {
     let app = get_application(w);
     let binding = app.imp().drilldown_switch.borrow();
     let dd = binding.as_ref();
@@ -147,7 +194,7 @@ pub fn set_zoom_widgets(w: &impl IsA<gtk::Widget>, zoom: bool, zoom_x: i32, zoom
 
 pub fn set_title_path(w: &impl IsA<gtk::Widget>, path: String) {
     let app = get_application(w);
-    let binding = app.imp().path.borrow();
+    let binding = app.imp().path_label.borrow();
     let bg = binding.as_ref();
     bg.unwrap().set_label(&path);
 }
