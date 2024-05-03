@@ -1,5 +1,5 @@
 use std::error::Error;
-use gtk::prelude::{ButtonExt, RangeExt};
+use gtk::prelude::{RangeExt};
 use gtk::{ApplicationWindow, Fixed, gdk, glib, PickFlags};
 use gtk::gdk::RGBA;
 use gtk::glib::{Value, Variant};
@@ -173,13 +173,9 @@ pub fn set_zoom_widgets(w: &impl IsA<gtk::Widget>, zoom: bool, zoom_x: i32, zoom
     let zoom_button_opt = binding_zoom_button.as_ref();
     let zoom_button = zoom_button_opt.unwrap();
     if zoom {
-        let folder_icon = &gtk::Image::builder().icon_name("folder").css_classes(["folder_zoomed"]).build();
-        zoom_button.set_css_classes(&["folder_zoomed"]);
-        zoom_button.set_child(Some(folder_icon));
-
+        zoom_button.set_css_classes(&["folder-zoomed"]);
     } else {
-        zoom_button.remove_css_class("folder_zoomed");
-        zoom_button.set_child(Some(&gtk::Image::builder().icon_name("folder").build()));
+        zoom_button.set_css_classes(&["folder-unzoomed"]);
     }
     let binding_zoom_x_scale = app.imp().zoom_x_scale.borrow();
     let zoom_x_scale_opt = binding_zoom_x_scale.as_ref();

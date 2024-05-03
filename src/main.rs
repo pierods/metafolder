@@ -16,6 +16,8 @@ mod gtk_wrappers;
 mod metafolder;
 mod zoom;
 mod cell_editor;
+mod preset;
+mod find;
 
 const APP_ID: &str = "metafolder";
 const DRAG_ACTION: DragAction = DragAction::MOVE;
@@ -23,7 +25,7 @@ const ICON_SIZE: i32 = 60;
 const INITIAL_DESKTOP_WIDTH: i32 = 1024;
 const DROP_TYPE: Type = Type::VARIANT;
 const DEFAULT_BG_COLOR: &str = "rgba(170, 170, 170, 1)";
-const CLASSES: &str = " .folder_zoomed {background-image: none; background-color: rgba(245, 241, 39, 0.8);} .icon_added {background-color: rgba(214, 39, 39, 0.35);}";
+const CLASSES: &str = " .icon_added {background-color: rgba(214, 39, 39, 0.35);} .folder-zoomed {background-image: none; background-color: rgba(245, 241, 39, 0.8);} .folder-unzoomed {background-image: none;}";
 static CELL_SIZES: &'static [i32] = &[40, 60, 80];
 static FONT_SIZES: &'static [&str] = &["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"];
 

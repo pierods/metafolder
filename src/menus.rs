@@ -1,4 +1,4 @@
-use gtk::{Align, Button, Label, Orientation, Switch};
+use gtk::{Align, Button, Label, MenuButton, Orientation, Switch};
 use gtk::{ApplicationWindow, ColorDialog, ColorDialogButton, HeaderBar};
 use gtk::gdk::RGBA;
 use gtk::glib::Propagation;
@@ -13,6 +13,8 @@ use crate::{DEFAULT_BG_COLOR, files, gtk_wrappers, zoom};
 use crate::folder::draw_folder;
 use crate::gtk_wrappers::{alert};
 use crate::cell_editor::make_cell_formatter;
+use crate::find::make_find;
+use crate::preset::make_presets;
 
 pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     let bar = HeaderBar::new();
@@ -30,27 +32,18 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     });
     bar.pack_start(&drilldown_switch);
 
-    let zoom_button = gtk::Button::builder().icon_name("folder").build();
-
-    bar.pack_start(&zoom_button);
     let (zoom_popover, zoom_x_scale, zoom_y_scale) = zoom::make_zoom();
+    let zoom_button = gtk::MenuButton::builder().icon_name("folder").popover(&zoom_popover).build();
+    bar.pack_start(&zoom_button);
     zoom_popover.connect_closed(clone!(@weak zoom_button => move |_| {
         let ds = gtk_wrappers::get_application(&zoom_button);
         if ds.imp().metafolder.borrow().zoom {
-            let folder_icon = &gtk::Image::builder().icon_name("folder").css_classes(["folder_zoomed"]).build();
-            zoom_button.set_css_classes(&["folder_zoomed"]);
-            zoom_button.set_child(Some(folder_icon));
+            zoom_button.set_css_classes(&["folder-zoomed"]);
         }
         else {
-            zoom_button.remove_css_class("folder_zoomed");
-            zoom_button.set_child(Some(&gtk::Image::builder().icon_name("folder").build()));
+        zoom_button.set_css_classes(&["folder-unzoomed"]);
         }
     }));
-
-    zoom_button.connect_clicked(move |b| {
-        b.set_child(Some(&zoom_popover));
-        zoom_popover.set_visible(true);
-    });
 
     let background_dialog = ColorDialog::builder().modal(true).title("Pick a background color").with_alpha(true).build();
     let background_color_button = ColorDialogButton::builder().rgba(&RGBA::parse(DEFAULT_BG_COLOR).unwrap()).dialog(&background_dialog).build();
@@ -66,18 +59,17 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     });
     bar.pack_start(&text_color_button);
 
-    let cell_size_button = gtk::Button::builder().label("a").build();
-    let (cell_size_popover, text_scale, bold_switch, cell_size_scale )= make_cell_formatter();
-    cell_size_popover.connect_closed(clone!(@weak cell_size_button => move |_| {
-        cell_size_button.set_label("a");
-    }));
-    cell_size_button.connect_clicked(move |b| {
-        b.set_child(Some(&cell_size_popover));
-        cell_size_popover.set_visible(true);
-    });
+    let (cell_size_popover, text_scale, bold_switch, cell_size_scale) = make_cell_formatter();
+    let cell_size_button = MenuButton::builder().label("a").popover(&cell_size_popover).build();
     bar.pack_start(&cell_size_button);
 
-    let app_name_pango = String::from("<span font_weight=\"bold\">metafolder</span>");
+    let preset_button = MenuButton::builder().icon_name("document-save").popover(&make_presets()).build();
+    bar.pack_start(&preset_button);
+
+    let search_button = MenuButton::builder().icon_name("folder").popover(&make_find()).build();
+    bar.pack_start(&search_button);
+
+    let app_name_pango = String::from("<span font_weight =\"bold\">metafolder</span>");
     let app_name_label = Label::builder().use_markup(true).label(app_name_pango.as_str()).build();
     let path_label = Label::new(Some(""));
     let title_widget = gtk::Box::builder().orientation(Orientation::Vertical).valign(Align::Center).build();

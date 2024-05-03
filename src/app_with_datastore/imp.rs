@@ -14,7 +14,7 @@ pub struct AppWithDatastore {
     pub(crate) monitor: RefCell<Option<FileMonitor>>,
     pub(crate) drilldown_switch: RefCell<Option<gtk::Switch>>,
     pub(crate) bg_color_button: RefCell<Option<gtk::ColorDialogButton>>,
-    pub(crate) zoom_button: RefCell<Option<gtk::Button>>,
+    pub(crate) zoom_button: RefCell<Option<gtk::MenuButton>>,
     pub(crate) zoom_x_scale: RefCell<Option<gtk::Scale>>,
     pub(crate) zoom_y_scale: RefCell<Option<gtk::Scale>>,
     pub(crate) font_color_button: RefCell<Option<gtk::ColorDialogButton>>,
