@@ -569,7 +569,7 @@ dependencies = [
 
 [[package]]
 name = "metafolder"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "gio-sys",
  "gtk4",

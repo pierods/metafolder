@@ -1,7 +1,8 @@
+use std::env;
 use gtk::{ApplicationWindow, glib};
 use gtk::gdk;
 use gtk::gdk::DragAction;
-use gtk::glib::Type;
+use gtk::glib::{Type};
 use gtk::prelude::*;
 
 use crate::app_with_datastore::AppWithDatastore;
@@ -30,6 +31,11 @@ static CELL_SIZES: &'static [i32] = &[40, 60, 80];
 static FONT_SIZES: &'static [&str] = &["xx-small", "x-small", "small", "medium", "large", "x-large", "xx-large"];
 
 fn main() -> glib::ExitCode {
+    let args: Vec<String> = env::args().collect();
+    if args.len() > 0 && args[1] == "version" {
+        println!("version: {}", env!("CARGO_PKG_VERSION"));
+        return glib::ExitCode::SUCCESS;
+    }
     glib::set_application_name("metafolder");
     let app = AppWithDatastore::default();
     app.set_application_id(Some("metafolder"));
