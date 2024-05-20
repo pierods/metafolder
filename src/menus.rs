@@ -1,5 +1,6 @@
 use gtk::{Align, Button, Label, MenuButton, Orientation, Switch};
 use gtk::{ApplicationWindow, ColorDialog, ColorDialogButton, HeaderBar};
+use gtk::gdk::ffi::gdk_texture_save_to_png;
 use gtk::gdk::RGBA;
 use gtk::glib::Propagation;
 
@@ -23,10 +24,14 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     up.connect_clicked(|b| {
         up_button_action(b);
     });
+    up.set_tooltip_text(Some("go up to parent folder"));
     bar.pack_start(&up);
 
-    bar.pack_start(&gtk::Label::builder().label("drilldown").build());
+    let drilldown_label = &gtk::Label::builder().label("drilldown").build();
+    drilldown_label.set_tooltip_text(Some("switch between drilldown or open folder for double click"));
+    bar.pack_start(drilldown_label);
     let drilldown_switch = gtk::Switch::builder().state(true).active(true).build();
+    drilldown_switch.set_tooltip_text(Some("switch between drilldown or open folder for double click"));
     drilldown_switch.connect_state_set(|sw, state| {
         drilldown_action(sw, state)
     });
@@ -34,6 +39,7 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
 
     let (zoom_popover, zoom_x_scale, zoom_y_scale) = zoom::make_zoom();
     let zoom_button = gtk::MenuButton::builder().icon_name("folder").popover(&zoom_popover).build();
+    zoom_button.set_tooltip_text(Some("zoom folder in or out"));
     bar.pack_start(&zoom_button);
     zoom_popover.connect_closed(clone!(@weak zoom_button => move |_| {
         let ds = gtk_wrappers::get_application(&zoom_button);
@@ -47,6 +53,7 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
 
     let background_dialog = ColorDialog::builder().modal(true).title("Pick a background color").with_alpha(true).build();
     let background_color_button = ColorDialogButton::builder().rgba(&RGBA::parse(DEFAULT_BG_COLOR).unwrap()).dialog(&background_dialog).build();
+    background_color_button.set_tooltip_text(Some("Pick a background color"));
     background_color_button.connect_rgba_notify(|cdb| {
         background_color_action(cdb);
     });
@@ -54,6 +61,7 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
 
     let text_color_dialog = ColorDialog::builder().modal(true).title("Pick a text color").with_alpha(true).build();
     let text_color_button = ColorDialogButton::builder().rgba(&RGBA::parse(DEFAULT_BG_COLOR).unwrap()).dialog(&text_color_dialog).build();
+    text_color_button.set_tooltip_text(Some("Pick a text color"));
     text_color_button.connect_rgba_notify(|cdb| {
         text_color_action(cdb);
     });
@@ -61,13 +69,14 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
 
     let (cell_size_popover, text_scale, bold_switch, cell_size_scale) = make_cell_formatter();
     let cell_size_button = MenuButton::builder().label("a").popover(&cell_size_popover).build();
+    cell_size_button.set_tooltip_text(Some("Edit cells"));
     bar.pack_start(&cell_size_button);
 
-    let preset_button = MenuButton::builder().icon_name("document-save").popover(&make_presets()).build();
-    bar.pack_start(&preset_button);
-
-    let search_button = MenuButton::builder().icon_name("folder").popover(&make_find()).build();
-    bar.pack_start(&search_button);
+    // let preset_button = MenuButton::builder().icon_name("document-save").popover(&make_presets()).build();
+    // bar.pack_start(&preset_button);
+    //
+    // let search_button = MenuButton::builder().icon_name("folder").popover(&make_find()).build();
+    // bar.pack_start(&search_button);
 
     let app_name_pango = String::from("<span font_weight =\"bold\">metafolder</span>");
     let app_name_label = Label::builder().use_markup(true).label(app_name_pango.as_str()).build();

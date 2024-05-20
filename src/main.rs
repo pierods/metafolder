@@ -32,7 +32,7 @@ static FONT_SIZES: &'static [&str] = &["xx-small", "x-small", "small", "medium",
 
 fn main() -> glib::ExitCode {
     let args: Vec<String> = env::args().collect();
-    if args.len() > 0 && args[1] == "version" {
+    if args.len() > 1 && args[1] == "version" {
         println!("version: {}", env!("CARGO_PKG_VERSION"));
         return glib::ExitCode::SUCCESS;
     }
