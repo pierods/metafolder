@@ -130,7 +130,7 @@ fn drop_action(dnd_msg: &Value, desktop: &Fixed, x: f64, y: f64) -> bool {
 }
 
 fn monitor_folder(f: &File, other: Option<&File>, event: FileMonitorEvent, d: &Fixed) {
-    if f.basename().unwrap().to_str().unwrap() == ".metafolder" {
+    if f.basename().unwrap().to_str().unwrap() == ".metafolder" || f.basename().unwrap().to_str().unwrap().starts_with(".") {
         return;
     }
     match event {
