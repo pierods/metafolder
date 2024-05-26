@@ -1,5 +1,3 @@
-use std::process::Command;
-
 use gtk::{Align, ApplicationWindow, Fixed, GestureClick, glib, pango, WidgetPaintable};
 use gtk::EventSequenceState;
 use gtk::gdk::ContentProvider;
@@ -73,7 +71,8 @@ pub fn make_cell(path: String, dir_item: &files::DirItem, size: i32) -> gtk::Box
                     }
                 }
             }
-            match Command::new("xdg-open").args([current_path.clone() + name.as_str()]).output() {
+            let p_conf = subprocess::PopenConfig {detached: true,setpgid: true,..Default::default()};
+            match subprocess::Popen::create(&["xdg-open", &(current_path.clone() + name.as_str())], p_conf){
                 Ok(_) => {}
                 Err(error) => { println!("error opening file {} : {}", current_path + name.as_str(), error) }
             }

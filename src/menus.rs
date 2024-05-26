@@ -1,6 +1,5 @@
 use gtk::{Align, Button, Label, MenuButton, Orientation, Switch};
 use gtk::{ApplicationWindow, ColorDialog, ColorDialogButton, HeaderBar};
-use gtk::gdk::ffi::gdk_texture_save_to_png;
 use gtk::gdk::RGBA;
 use gtk::glib::Propagation;
 
