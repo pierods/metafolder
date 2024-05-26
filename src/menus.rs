@@ -74,8 +74,9 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     // let preset_button = MenuButton::builder().icon_name("document-save").popover(&make_presets()).build();
     // bar.pack_start(&preset_button);
     //
-    // let search_button = MenuButton::builder().icon_name("folder").popover(&make_find()).build();
-    // bar.pack_start(&search_button);
+     let (search_box, search_results) = make_find();
+    bar.pack_end(&search_box);
+    bar.pack_end(&search_results);
 
     let app_name_pango = String::from("<span font_weight =\"bold\">metafolder</span>");
     let app_name_label = Label::builder().use_markup(true).label(app_name_pango.as_str()).build();
