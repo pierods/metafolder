@@ -1,46 +1,43 @@
-use gtk::{EventControllerKey, gdk, Label, SearchEntry};
-use gtk::gdk::ModifierType;
+use gtk::{EventControllerKey, Label, SearchEntry};
 use gtk::glib;
+use gtk::glib::clone;
 use gtk::prelude::{EditableExt, WidgetExt};
-
-use crate::glib::clone;
+use gtk::subclass::prelude::ObjectSubclassIsExt;
+use crate::gtk_wrappers;
 
 pub(crate) fn make_find() -> (SearchEntry, Label) {
-    let find_box = SearchEntry::builder().placeholder_text("search cells").build();
-    find_box.set_tooltip_text(Some("find a cell by name - ctrl-f/escape"));
+    let find_box = SearchEntry::builder().placeholder_text("search").build();
+    find_box.set_tooltip_text(Some("find a cell by name - enter/escape"));
     find_box.set_width_request(300);
 
     let find_results = Label::new(None);
-    find_box.connect_search_changed(|a| {
-        if a.text() == "" {
-            println!("cleared")
+    find_box.connect_activate(clone!(@weak find_results => move |f_b| {
+        let ds = gtk_wrappers::get_application(f_b);
+        let matches = ds.imp().metafolder.borrow_mut().find_cell(f_b.text().to_string());
+        match matches {
+            0 => {find_results.set_label("no matches");}
+            1 => {find_results.set_label((matches.to_string().as_str().to_owned() + " match").as_str());}
+            _ => {find_results.set_label((matches.to_string().as_str().to_owned() + " matches").as_str());}
         }
-    });
-    find_box.connect_search_started(|a| {
-        println!("sst {}", a.text())
-    }
-    );
-    find_box.connect_stop_search(|a| {
-        a.set_text("");
-    });
+    }));
+    find_box.connect_search_changed(clone!(@weak find_results => move |f_b| {
+        if f_b.text() == "" {
+            let ds = gtk_wrappers::get_application(f_b);
+            ds.imp().metafolder.borrow_mut().clear_found_cells();
+            find_results.set_label("")
+        }
+    }));
+    find_box.connect_stop_search(clone!(@weak find_results => move |f_b| {
+        let ds = gtk_wrappers::get_application(f_b);
+        ds.imp().metafolder.borrow_mut().clear_found_cells();
+        find_results.set_label("")
+    }));
 
     let key_capture = EventControllerKey::new();
-
-    key_capture.connect_key_pressed(clone!(@weak find_box, @weak find_results => @default-return glib::Propagation::Proceed, move |_, key, _, modifier_type| {
-        match modifier_type {
-            ModifierType::CONTROL_MASK => {
-                match key {
-                    gdk::Key::f => {
-                        find_results.set_text(find_box.text().as_str());
-                        println!("{}", find_box.text());
-                    }
-                    _ => return glib::Propagation::Proceed
-                }
-            }
-            _ => return glib::Propagation::Proceed
-        };
+    //disable ctrl-g default behavior
+    key_capture.connect_key_pressed(|_, _, _, _| {
         glib::Propagation::Proceed
-    }));
+    });
     find_box.add_controller(key_capture);
 
     (find_box, find_results)

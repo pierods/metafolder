@@ -25,6 +25,8 @@ pub struct MetaFolder {
     font_color_replacer: Regex,
     font_weight_replacer: Regex,
     rgba_color_matcher: Regex,
+
+    found_cells: HashSet<String>
 }
 
 impl Default for MetaFolder {
@@ -48,9 +50,36 @@ impl MetaFolder {
             font_color_replacer: Regex::new("color=\"[^\"]+\"").unwrap(),
             font_weight_replacer: Regex::new("font_weight=\"[^\"]+\"").unwrap(),
             rgba_color_matcher: Regex::new("\\d+").unwrap(),
+            found_cells: HashSet::new()
         };
         m
     }
+    pub(crate) fn find_cell(&mut self, mut text : String) -> i32 {
+        if self.found_cells.len() > 0 {
+            self.clear_found_cells()
+        }
+        text = text.to_lowercase();
+        let mut matches = 0;
+        for (key, cell) in &self.cell_map {
+            let label_widget = cell.last_child().unwrap();
+            let label = label_widget.downcast::<gtk::Label>().unwrap();
+            let label_text = label.label().as_str().to_string();
+            if label_text.to_lowercase().contains(text.as_str()) {
+                cell.set_css_classes(&["icon_found"]);
+                matches += 1;
+                self.found_cells.insert(key.clone());
+            }
+        }
+        matches
+    }
+
+    pub(crate) fn clear_found_cells(&mut self) {
+        for key in &self.found_cells {
+            self.cell_map.get(key).unwrap().remove_css_class("icon_found");
+        }
+        self.found_cells = HashSet::new();
+    }
+
     pub(crate) fn change_cell_size(&self, cell_size: i32, save: bool) -> Option<Error> {
         for (_, cell) in &self.cell_map {
             cell.set_width_request(cell_size);
