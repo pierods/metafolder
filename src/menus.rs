@@ -80,8 +80,9 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
 
     bar.pack_start(&tap_button);
     // let preset_button = MenuButton::builder().icon_name("document-save").popover(&make_presets()).build();
+    // preset_button.set_tooltip_text(Some("create and apply presets"));
     // bar.pack_start(&preset_button);
-    //
+
      let (search_box, search_results) = make_find();
     bar.pack_end(&search_box);
     bar.pack_end(&search_results);

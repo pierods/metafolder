@@ -1,25 +1,36 @@
-use gtk::{Button, EditableLabel, Popover};
-use rand::Rng;
-use gtk::Orientation::Vertical;
-use gtk::prelude::{BoxExt, ButtonExt, PopoverExt};
+use gtk::{Align, Button, Entry, Label, Popover};
+use gtk::Orientation::{Horizontal, Vertical};
+use gtk::prelude::{BoxExt, ButtonExt, EditableExt, PopoverExt};
 
 pub(crate) fn make_presets() -> Popover {
     let container = gtk::Box::builder().orientation(Vertical).build();
     let popover = Popover::builder().build();
     popover.set_child(Some(&container));
 
+    let add_box = gtk::Box::builder().orientation(Horizontal).build();
+    add_box.set_spacing(10);
+    let add_entry = Entry::builder().max_length(30).build();
+    add_box.append(&add_entry);
     let add_button = Button::builder().label("+").build();
-    container.append(&add_button);
+    add_box.append(&add_button);
+
+    container.append(&add_box);
 
     add_button.connect_clicked(move |_b| {
-        let preset_box = gtk::Box::builder().orientation(gtk::Orientation::Horizontal).build();
-
-        let mut rng = rand::thread_rng();
-        let preset = EditableLabel::builder().text("preset-".to_owned() + rng.gen_range(1000..9999).to_string().as_str()).build();
+        if add_entry.text() == "" {
+            return;
+        }
+        let preset_box = gtk::Box::builder().orientation(Horizontal).hexpand(true).build();
+        preset_box.set_spacing(10);
+        let preset = Label::builder().label(add_entry.text()).build();
         preset_box.append(&preset);
-        let preset_button = Button::builder().label("apply").build();
+        let delete_button = Button::builder().label("delete").halign(Align::End).build();
+        preset_box.append(&delete_button);
+        let preset_button = Button::builder().label("apply").halign(Align::End).build();
         preset_box.append(&preset_button);
+
         container.append(&preset_box);
+        add_entry.set_text("");
     });
 
     popover
