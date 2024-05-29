@@ -26,7 +26,7 @@ pub struct MetaFolder {
     font_weight_replacer: Regex,
     rgba_color_matcher: Regex,
 
-    found_cells: HashSet<String>
+    found_cells: HashSet<String>,
 }
 
 impl Default for MetaFolder {
@@ -50,11 +50,25 @@ impl MetaFolder {
             font_color_replacer: Regex::new("color=\"[^\"]+\"").unwrap(),
             font_weight_replacer: Regex::new("font_weight=\"[^\"]+\"").unwrap(),
             rgba_color_matcher: Regex::new("\\d+").unwrap(),
-            found_cells: HashSet::new()
+            found_cells: HashSet::new(),
         };
         m
     }
-    pub(crate) fn find_cell(&mut self, mut text : String) -> i32 {
+
+    pub(crate) fn tap(&self, w: &impl IsA<gtk::Widget>) {
+        let desktop = get_desktop(w);
+
+        for (_, gbox) in &self.cell_map {
+            let current_pos = get_widget_bounds(&desktop, gbox);
+
+            let new_x = current_pos.x() - ((current_pos.x() as i32) % 5) as f32;
+            let new_y = current_pos.y() - ((current_pos.y() as i32) % 5) as f32;
+            desktop.move_(gbox, new_x as f64, new_y as f64);
+        }
+        self.scan_positions_and_save_settings(&desktop, "", 0f64, 0f64);
+    }
+
+    pub(crate) fn find_cell(&mut self, mut text: String) -> i32 {
         if self.found_cells.len() > 0 {
             self.clear_found_cells()
         }
@@ -141,7 +155,7 @@ impl MetaFolder {
             label.set_label(label_text.as_str());
         }
         if !save {
-            return None
+            return None;
         }
         let mut memo_folder = load_settings(self.current_path.clone());
         memo_folder.font_color = hex;

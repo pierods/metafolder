@@ -71,6 +71,14 @@ pub(crate) fn make_header_bar(app_window: &ApplicationWindow) -> HeaderBar {
     cell_size_button.set_tooltip_text(Some("Edit cells"));
     bar.pack_start(&cell_size_button);
 
+    let tap_button = Button::builder().label("tap").build();
+    tap_button.set_tooltip_text(Some("tap icons to alignment"));
+    tap_button.connect_clicked(|b| {
+        let ds = gtk_wrappers::get_application(b);
+        ds.imp().metafolder.borrow().tap(b);
+    });
+
+    bar.pack_start(&tap_button);
     // let preset_button = MenuButton::builder().icon_name("document-save").popover(&make_presets()).build();
     // bar.pack_start(&preset_button);
     //
