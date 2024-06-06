@@ -31,6 +31,7 @@ pub(crate) fn make_cell_formatter() -> (Popover, Scale, Switch, Scale) {
     text_size_scale.set_round_digits(0);
     text_size_scale.set_width_request(300);
     text_size_scale.set_height_request(50);
+    text_size_scale.set_tooltip_text(Some("adjust text size"));
 
     text_size_scale.connect_change_value(move |scale, _, val| {
         let ds = gtk_wrappers::get_application(scale);
@@ -71,6 +72,7 @@ pub(crate) fn make_cell_formatter() -> (Popover, Scale, Switch, Scale) {
     cell_size_scale.set_round_digits(0);
     cell_size_scale.set_width_request(300);
     cell_size_scale.set_height_request(50);
+    cell_size_scale.set_tooltip_text(Some("adjust cell size"));
 
     cell_size_scale.connect_change_value(move |scale, _, val| {
         let ds = gtk_wrappers::get_application(scale);
