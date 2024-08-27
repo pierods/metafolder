@@ -13,7 +13,7 @@ A small desktop icon manager for gnome 42+.
  - Ability to show any folder as desktop
  - Will keep desktop settings when folder is moved
 
-## Npn-features
+## Non-features
  - Automatic placement of icons: metafolder will never move your icons from the position you placed them at
  - File management: all file management (file move/delete/rename/add) is delegated to the file system
 
